@@ -5,6 +5,7 @@ import { useAdminUI } from '../../context/AdminUIContext.jsx';
 import StatCard from '../../components/Admin/StatCard.jsx';
 import Button from '../../components/common/Button.jsx';
 import api from '../../services/api.js';
+import { StatCardsSkeleton } from '../../components/common/SkeletonLoader.jsx';
 
 export default function DashboardPage() {
   const {
@@ -103,7 +104,10 @@ export default function DashboardPage() {
       )}
 
       {/* System Statistics Cards Grid - Actual Aggregated Counts */}
-      <div className="stats-grid">
+      {isLoading ? (
+        <StatCardsSkeleton count={4} />
+      ) : (
+        <div className="stats-grid">
         <StatCard
           icon={
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -191,6 +195,7 @@ export default function DashboardPage() {
           onClick={() => navigate('/pricing')}
         />
       </div>
+      )}
 
       {/* Two-Column Content Overview */}
       <div className="dashboard-content-split">

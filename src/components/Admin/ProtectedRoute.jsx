@@ -1,6 +1,4 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext.jsx';
+import LoadingSpinner from '../common/LoadingSpinner.jsx';
 
 /**
  * ProtectedRoute Wrapper
@@ -12,24 +10,13 @@ export default function ProtectedRoute({ children }) {
 
   if (isLoading) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '50vh',
-        gap: 16
-      }}>
-        <div style={{
-          width: 40,
-          height: 40,
-          border: '4px solid #e2e8f0',
-          borderTopColor: '#d4af37',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite'
-        }} />
-        <span style={{ color: '#64748b', fontSize: 14 }}>Verifying security credentials...</span>
-      </div>
+      <LoadingSpinner
+        size="lg"
+        color="accent"
+        fullHeight
+        label="Verifying security credentials..."
+        subtext="Memorial Express Admin Portal"
+      />
     );
   }
 

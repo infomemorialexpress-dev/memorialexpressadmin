@@ -5,6 +5,8 @@ import InputField from '../../components/common/InputField.jsx';
 import FuneralHomeModal from '../../components/Admin/FuneralHomeModal.jsx';
 import api from '../../services/api.js';
 import { getStoredDb } from '../../services/base/apiClient.js';
+import { FuneralHomeAdminCardSkeleton } from '../../components/common/SkeletonLoader.jsx';
+import ShimmerImage from '../../components/common/ShimmerImage.jsx';
 
 export default function FuneralHomesPage() {
   const { lang, addToast } = useAdminUI();
@@ -207,13 +209,14 @@ export default function FuneralHomesPage() {
         </div>
       )}
 
-      {/* 4. Main Content: Loading, Empty State, or Cards Grid */}
+      {/* 4. Main Content: Loading Shimmer Skeleton, Empty State, or Cards Grid */}
       {isLoading ? (
-        <div className="loading-state-card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div className="spinner" style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
-          <p style={{ color: 'var(--text-secondary, #64748b)', fontSize: 16 }}>
-            {lang === 'es' ? 'Cargando funerarias desde la base de datos...' : 'Loading funeral homes from database...'}
-          </p>
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', color: '#183655', fontWeight: 650, fontSize: '14px' }}>
+            <div className="app-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
+            <span>{lang === 'es' ? 'Cargando funerarias desde la base de datos...' : 'Loading funeral homes from database...'}</span>
+          </div>
+          <FuneralHomeAdminCardSkeleton count={6} />
         </div>
       ) : filteredHomes.length === 0 ? (
         <div className="empty-results-card">
@@ -247,10 +250,13 @@ export default function FuneralHomesPage() {
                 {/* Facility Image Section */}
                 <div className="card-image-wrapper">
                   {photo ? (
-                    <img
+                    <ShimmerImage
                       src={photo}
                       alt={home.name}
                       className="card-facility-img"
+                      width="100%"
+                      height="100%"
+                      objectFit="cover"
                     />
                   ) : (
                     <div className="card-image-fallback">

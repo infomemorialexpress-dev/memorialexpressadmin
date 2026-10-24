@@ -31,8 +31,8 @@ export default function PackagePricingTable({
   return (
     <div className="table-responsive-wrapper">
       {isLoadingServices && (
-        <div style={{ padding: '8px 12px', fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #cbd5e1', borderTopColor: '#183655', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ padding: '8px 12px', fontSize: '12px', color: '#183655', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
+          <span className="app-spinner" style={{ width: '13px', height: '13px', borderWidth: '2px', borderColor: '#cbd5e1', borderTopColor: '#183655' }} />
           {lang === 'es' ? 'Sincronizando paquetes con MongoDB Atlas...' : 'Syncing service packages with MongoDB Atlas...'}
         </div>
       )}
