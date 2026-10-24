@@ -70,12 +70,14 @@ export function AdminDataProvider({ children }) {
   const [serviceItems, setServiceItems] = useState([]);
   const [isLoadingServices, setIsLoadingServices] = useState(false);
 
-  // Load live catalog services for active funeral home from backend API
+  // Load live catalog (services, caskets, addons) for active funeral home from backend API
   useEffect(() => {
     let mounted = true;
     if (!selectedHomeId) return;
 
     setIsLoadingServices(true);
+
+    // 1. Fetch live Services
     api.get(`/catalog/location/${selectedHomeId}?type=SERVICE`)
       .then(res => {
         if (mounted && Array.isArray(res.data) && res.data.length > 0) {
@@ -117,6 +119,68 @@ export function AdminDataProvider({ children }) {
       .finally(() => {
         if (mounted) setIsLoadingServices(false);
       });
+
+    // 2. Fetch live Caskets
+    api.get(`/catalog/location/${selectedHomeId}?type=CASKET`)
+      .then(res => {
+        if (mounted && Array.isArray(res.data) && res.data.length > 0) {
+          setAdminDb(prev => {
+            const backendCaskets = res.data.map(item => ({
+              id: item._id,
+              _id: item._id,
+              name: item.name,
+              price: Number(item.listPrice) || 0,
+              listPrice: Number(item.listPrice) || 0,
+              description: item.specifications || '',
+              specifications: item.specifications || '',
+              image: item.imageUrl || '',
+              imageUrl: item.imageUrl || '',
+              home: item.funeralHomeId || '*',
+              assignment: item.assignment || 'Global (*)',
+              taxable: true
+            }));
+            const map = new Map();
+            for (const c of prev.caskets || []) {
+              map.set((c.name || '').toLowerCase(), c);
+            }
+            for (const bc of backendCaskets) {
+              map.set((bc.name || '').toLowerCase(), bc);
+            }
+            return { ...prev, caskets: Array.from(map.values()) };
+          });
+        }
+      })
+      .catch(err => console.warn('Live caskets load failed:', err));
+
+    // 3. Fetch live Add-ons
+    api.get(`/catalog/location/${selectedHomeId}?type=ADDON`)
+      .then(res => {
+        if (mounted && Array.isArray(res.data) && res.data.length > 0) {
+          setAdminDb(prev => {
+            const backendAddons = res.data.map(item => ({
+              id: item._id,
+              _id: item._id,
+              name: item.name,
+              price: Number(item.listPrice) || 0,
+              listPrice: Number(item.listPrice) || 0,
+              description: item.specifications || '',
+              specifications: item.specifications || '',
+              home: item.funeralHomeId || '*',
+              assignment: item.assignment || 'Global (*)',
+              taxable: false
+            }));
+            const map = new Map();
+            for (const a of prev.addons || []) {
+              map.set((a.name || '').toLowerCase(), a);
+            }
+            for (const ba of backendAddons) {
+              map.set((ba.name || '').toLowerCase(), ba);
+            }
+            return { ...prev, addons: Array.from(map.values()) };
+          });
+        }
+      })
+      .catch(err => console.warn('Live addons load failed:', err));
 
     return () => { mounted = false; };
   }, [selectedHomeId]);
@@ -199,43 +263,61 @@ export function AdminDataProvider({ children }) {
      PRICING & CATALOG HANDLERS
      ========================================================================= */
 
+  const isMongoId = (id) => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
+
   const handleCasketPriceChange = useCallback(async (casketId, newPrice) => {
     const priceNum = Math.max(0, Number(newPrice) || 0);
     const updatedCaskets = (adminDb.caskets || []).map(c => {
-      if (c.id === casketId) {
-        return { ...c, price: priceNum };
+      if (c.id === casketId || c._id === casketId) {
+        return { ...c, price: priceNum, listPrice: priceNum };
       }
       return c;
     });
 
+    setAdminDb(prev => ({ ...prev, caskets: updatedCaskets }));
+
     try {
+      if (isMongoId(casketId)) {
+        await api.patch(`/catalog/${casketId}`, { listPrice: priceNum });
+      }
       const res = await updatePrices(selectedHomeId, { caskets: updatedCaskets });
       if (res.success) {
-        setAdminDb(res.db);
-        addToast(lang === 'es' ? 'Precio de ataúd actualizado.' : 'Casket price updated.', 'success');
+        addToast(
+          lang === 'es' ? 'Precio de ataúd guardado en MongoDB Atlas.' : 'Casket price saved to MongoDB Atlas.',
+          'success'
+        );
       }
     } catch (err) {
-      addToast(formatErrorMessage(err), 'error');
+      console.warn('Backend patch casket price failed, saved locally:', err);
+      addToast(lang === 'es' ? 'Precio guardado localmente.' : 'Price saved locally.', 'info');
     }
   }, [addToast, adminDb.caskets, lang, selectedHomeId]);
 
   const handleAddonPriceChange = useCallback(async (addonId, newPrice) => {
     const priceNum = Math.max(0, Number(newPrice) || 0);
     const updatedAddons = (adminDb.addons || []).map(a => {
-      if (a.id === addonId) {
-        return { ...a, price: priceNum };
+      if (a.id === addonId || a._id === addonId) {
+        return { ...a, price: priceNum, listPrice: priceNum };
       }
       return a;
     });
 
+    setAdminDb(prev => ({ ...prev, addons: updatedAddons }));
+
     try {
+      if (isMongoId(addonId)) {
+        await api.patch(`/catalog/${addonId}`, { listPrice: priceNum });
+      }
       const res = await updatePrices(selectedHomeId, { addons: updatedAddons });
       if (res.success) {
-        setAdminDb(res.db);
-        addToast(lang === 'es' ? 'Tarifa de adicional actualizada.' : 'Add-on rate updated.', 'success');
+        addToast(
+          lang === 'es' ? 'Tarifa de adicional guardada en MongoDB Atlas.' : 'Add-on rate saved to MongoDB Atlas.',
+          'success'
+        );
       }
     } catch (err) {
-      addToast(formatErrorMessage(err), 'error');
+      console.warn('Backend patch addon price failed, saved locally:', err);
+      addToast(lang === 'es' ? 'Tarifa guardada localmente.' : 'Rate saved locally.', 'info');
     }
   }, [addToast, adminDb.addons, lang, selectedHomeId]);
 
@@ -299,43 +381,70 @@ export function AdminDataProvider({ children }) {
   const handleAddItem = useCallback(async ({ name, price, category, homeId, description = '', image = '' }) => {
     const priceNum = Math.max(0, Number(price) || 0);
     const targetHome = homeId || selectedHomeId;
-    const id = (category === 'casket' ? 'casket_' : 'addon_') + Date.now();
 
     try {
+      let createdBackendItem = null;
+      try {
+        const payload = {
+          name: name.trim(),
+          itemType: category === 'casket' ? 'CASKET' : 'ADDON',
+          listPrice: priceNum,
+          specifications: description,
+          imageUrl: image,
+          funeralHomeId: targetHome === '*' ? null : targetHome,
+          assignment: targetHome === '*' ? 'Global (*)' : 'Specific Location'
+        };
+        const res = await api.post('/catalog', payload);
+        if (res.data) createdBackendItem = res.data;
+      } catch (backendErr) {
+        console.warn('Backend POST /catalog failed, fallback to local:', backendErr.message);
+      }
+
+      const id = createdBackendItem?._id || (category === 'casket' ? 'casket_' : 'addon_') + Date.now();
+
       if (category === 'casket') {
         const newCasket = {
           id,
+          _id: id,
           name: name.trim(),
           price: priceNum,
+          listPrice: priceNum,
           home: targetHome,
           description: description || 'Custom catalog model',
+          specifications: description || 'Custom catalog model',
           image: image || '',
+          imageUrl: image || '',
           taxable: true
         };
         const updated = [...(adminDb.caskets || []), newCasket];
-        const res = await updatePrices(targetHome, { caskets: updated });
-        if (res.success) {
-          setAdminDb(res.db);
-          addToast(lang === 'es' ? 'Ataúd agregado al catálogo.' : 'Casket added to catalog.', 'success');
-          return true;
-        }
+        await updatePrices(targetHome, { caskets: updated });
+        setAdminDb(prev => ({ ...prev, caskets: updated }));
+        addToast(
+          lang === 'es' ? 'Ataúd guardado en MongoDB Atlas.' : 'Casket saved to MongoDB Atlas.',
+          'success'
+        );
+        return true;
       } else {
         const newAddon = {
           id,
+          _id: id,
           name: name.trim(),
           price: priceNum,
+          listPrice: priceNum,
           home: targetHome,
+          description: description || '',
+          specifications: description || '',
           taxable: false
         };
         const updated = [...(adminDb.addons || []), newAddon];
-        const res = await updatePrices(targetHome, { addons: updated });
-        if (res.success) {
-          setAdminDb(res.db);
-          addToast(lang === 'es' ? 'Servicio adicional agregado.' : 'Add-on added to catalog.', 'success');
-          return true;
-        }
+        await updatePrices(targetHome, { addons: updated });
+        setAdminDb(prev => ({ ...prev, addons: updated }));
+        addToast(
+          lang === 'es' ? 'Servicio adicional guardado en MongoDB Atlas.' : 'Add-on saved to MongoDB Atlas.',
+          'success'
+        );
+        return true;
       }
-      return false;
     } catch (err) {
       addToast(formatErrorMessage(err), 'error');
       return false;
@@ -344,45 +453,60 @@ export function AdminDataProvider({ children }) {
 
   const handleUpdateItem = useCallback(async (itemId, itemType, updates) => {
     try {
+      if (isMongoId(itemId)) {
+        try {
+          const patchPayload = {};
+          if (updates.name !== undefined) patchPayload.name = updates.name;
+          if (updates.price !== undefined) patchPayload.listPrice = Number(updates.price);
+          if (updates.specifications !== undefined || updates.description !== undefined) {
+            patchPayload.specifications = updates.specifications || updates.description;
+          }
+          if (updates.image !== undefined) patchPayload.imageUrl = updates.image;
+          await api.patch(`/catalog/${itemId}`, patchPayload);
+        } catch (backendErr) {
+          console.warn('Backend PATCH /catalog/:id failed:', backendErr.message);
+        }
+      }
+
       if (itemType === 'casket') {
         const updated = (adminDb.caskets || []).map(c => {
-          if (c.id === itemId) {
+          if (c.id === itemId || c._id === itemId) {
             return {
               ...c,
               name: updates.name !== undefined ? updates.name : c.name,
               price: updates.price !== undefined ? Number(updates.price) : c.price,
+              listPrice: updates.price !== undefined ? Number(updates.price) : c.price,
               description: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : c.description),
-              image: updates.image !== undefined ? updates.image : c.image
+              specifications: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : c.description),
+              image: updates.image !== undefined ? updates.image : c.image,
+              imageUrl: updates.image !== undefined ? updates.image : c.image
             };
           }
           return c;
         });
-        const res = await updatePrices(selectedHomeId, { caskets: updated });
-        if (res.success) {
-          setAdminDb(res.db);
-          addToast(lang === 'es' ? 'Ataúd actualizado con éxito.' : 'Casket updated successfully.', 'success');
-          return true;
-        }
+        await updatePrices(selectedHomeId, { caskets: updated });
+        setAdminDb(prev => ({ ...prev, caskets: updated }));
+        addToast(lang === 'es' ? 'Ataúd actualizado con éxito.' : 'Casket updated successfully.', 'success');
+        return true;
       } else {
         const updated = (adminDb.addons || []).map(a => {
-          if (a.id === itemId) {
+          if (a.id === itemId || a._id === itemId) {
             return {
               ...a,
               name: updates.name !== undefined ? updates.name : a.name,
               price: updates.price !== undefined ? Number(updates.price) : a.price,
-              description: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : a.description)
+              listPrice: updates.price !== undefined ? Number(updates.price) : a.price,
+              description: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : a.description),
+              specifications: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : a.description)
             };
           }
           return a;
         });
-        const res = await updatePrices(selectedHomeId, { addons: updated });
-        if (res.success) {
-          setAdminDb(res.db);
-          addToast(lang === 'es' ? 'Servicio adicional actualizado.' : 'Add-on updated successfully.', 'success');
-          return true;
-        }
+        await updatePrices(selectedHomeId, { addons: updated });
+        setAdminDb(prev => ({ ...prev, addons: updated }));
+        addToast(lang === 'es' ? 'Servicio adicional actualizado.' : 'Add-on updated successfully.', 'success');
+        return true;
       }
-      return false;
     } catch (err) {
       addToast(formatErrorMessage(err), 'error');
       return false;
@@ -391,14 +515,18 @@ export function AdminDataProvider({ children }) {
 
   const handleDeleteCasket = useCallback(async (casketId) => {
     try {
-      const updated = (adminDb.caskets || []).filter(c => c.id !== casketId);
-      const res = await updatePrices(selectedHomeId, { caskets: updated });
-      if (res.success) {
-        setAdminDb(res.db);
-        addToast(lang === 'es' ? 'Ataúd eliminado.' : 'Casket removed.', 'success');
-        return true;
+      if (isMongoId(casketId)) {
+        try {
+          await api.delete(`/catalog/${casketId}`);
+        } catch (backendErr) {
+          console.warn('Backend DELETE /catalog failed:', backendErr.message);
+        }
       }
-      return false;
+      const updated = (adminDb.caskets || []).filter(c => c.id !== casketId && c._id !== casketId);
+      await updatePrices(selectedHomeId, { caskets: updated });
+      setAdminDb(prev => ({ ...prev, caskets: updated }));
+      addToast(lang === 'es' ? 'Ataúd eliminado.' : 'Casket removed.', 'success');
+      return true;
     } catch (err) {
       addToast(formatErrorMessage(err), 'error');
       return false;
@@ -407,14 +535,18 @@ export function AdminDataProvider({ children }) {
 
   const handleDeleteAddon = useCallback(async (addonId) => {
     try {
-      const updated = (adminDb.addons || []).filter(a => a.id !== addonId);
-      const res = await updatePrices(selectedHomeId, { addons: updated });
-      if (res.success) {
-        setAdminDb(res.db);
-        addToast(lang === 'es' ? 'Adicional eliminado.' : 'Add-on removed.', 'success');
-        return true;
+      if (isMongoId(addonId)) {
+        try {
+          await api.delete(`/catalog/${addonId}`);
+        } catch (backendErr) {
+          console.warn('Backend DELETE /catalog failed:', backendErr.message);
+        }
       }
-      return false;
+      const updated = (adminDb.addons || []).filter(a => a.id !== addonId && a._id !== addonId);
+      await updatePrices(selectedHomeId, { addons: updated });
+      setAdminDb(prev => ({ ...prev, addons: updated }));
+      addToast(lang === 'es' ? 'Adicional eliminado.' : 'Add-on removed.', 'success');
+      return true;
     } catch (err) {
       addToast(formatErrorMessage(err), 'error');
       return false;

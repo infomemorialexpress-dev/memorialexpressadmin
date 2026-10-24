@@ -173,13 +173,47 @@ export function getStoredAdminToken() {
  */
 export async function addFuneralHome(homeData) {
   try {
-    await new Promise(resolve => setTimeout(resolve, 250));
-
     const { name, city, zip, county } = homeData || {};
     if (!name || !name.trim()) {
       throw new ApiError('Funeral Home Name is strictly required.', 400);
     }
 
+    // 1. Try real NestJS backend POST /funeral-homes
+    try {
+      const payload = {
+        name: name.trim(),
+        city: city ? city.trim() : '',
+        zipCode: zip ? zip.trim() : (homeData.zipCode || ''),
+        county: county ? county.trim() : '',
+        streetAddress: homeData.streetAddress || homeData.address || '',
+        phone: homeData.phone || '',
+        imageUrl: homeData.imageUrl || homeData.image || '',
+        chapels: homeData.chapels || homeData.locations || [{
+          city: city ? city.trim() : '',
+          zip: zip ? zip.trim() : '',
+          county: county ? county.trim() : '',
+          surcharge: 0
+        }]
+      };
+
+      const res = await api.post('/funeral-homes', payload);
+      if (res.data) {
+        const savedHome = res.data;
+        const db = getStoredDb();
+        db.homes = (db.homes || []).filter(h => h.id !== savedHome.id && h._id !== savedHome._id);
+        db.homes.push(savedHome);
+        saveStoredDb(db);
+        return {
+          success: true,
+          home: savedHome,
+          allHomes: db.homes
+        };
+      }
+    } catch (backendErr) {
+      console.warn('[adminService.addFuneralHome] Backend POST failed, using local storage fallback:', backendErr.message);
+    }
+
+    // 2. Offline fallback
     const db = getStoredDb();
     const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 30) + '_' + Math.floor(Math.random() * 1000);
 
@@ -201,16 +235,6 @@ export async function addFuneralHome(homeData) {
     };
 
     db.homes.push(newHome);
-
-    // Provide default package entry so quoter works immediately
-    for (const [svcId] of LEGACY_DATA.SERVICES) {
-      db.packages[`${id}|${svcId}`] = {
-        section1: svcId === 'two_day' ? 3800 : svcId === 'one_day' ? 3400 : 2500,
-        section2: 1200,
-        verified: true
-      };
-    }
-
     saveStoredDb(db);
     return {
       success: true,
@@ -312,9 +336,30 @@ export async function resetDemoData() {
  */
 export async function updateFuneralHome(homeId, updates) {
   try {
-    await new Promise(resolve => setTimeout(resolve, 150));
+    // 1. Try real backend PATCH /funeral-homes/:id
+    try {
+      const res = await api.patch(`/funeral-homes/${homeId}`, updates);
+      if (res.data) {
+        const updated = res.data;
+        const db = getStoredDb();
+        const idx = (db.homes || []).findIndex(h => h.id === homeId || h._id === homeId);
+        if (idx !== -1) {
+          db.homes[idx] = { ...db.homes[idx], ...updated };
+        }
+        saveStoredDb(db);
+        return {
+          success: true,
+          home: updated,
+          allHomes: db.homes
+        };
+      }
+    } catch (backendErr) {
+      console.warn('[adminService.updateFuneralHome] Backend PATCH failed, using local storage fallback:', backendErr.message);
+    }
+
+    // 2. Offline fallback
     const db = getStoredDb();
-    const idx = (db.homes || []).findIndex(h => h.id === homeId);
+    const idx = (db.homes || []).findIndex(h => h.id === homeId || h._id === homeId);
     if (idx === -1) {
       throw new ApiError(`Funeral home with ID "${homeId}" not found.`, 404);
     }
@@ -342,9 +387,16 @@ export async function updateFuneralHome(homeId, updates) {
  */
 export async function deleteFuneralHome(homeId) {
   try {
-    await new Promise(resolve => setTimeout(resolve, 150));
+    // 1. Try real backend DELETE /funeral-homes/:id
+    try {
+      await api.delete(`/funeral-homes/${homeId}`);
+    } catch (backendErr) {
+      console.warn('[adminService.deleteFuneralHome] Backend DELETE failed, using local fallback:', backendErr.message);
+    }
+
+    // 2. Offline fallback
     const db = getStoredDb();
-    db.homes = (db.homes || []).filter(h => h.id !== homeId);
+    db.homes = (db.homes || []).filter(h => h.id !== homeId && h._id !== homeId);
     saveStoredDb(db);
     return {
       success: true,
