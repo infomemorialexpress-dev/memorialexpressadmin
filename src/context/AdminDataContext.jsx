@@ -20,6 +20,7 @@ import {
   deleteAgent
 } from '../services/admin/adminService.js';
 import { useAdminUI } from './AdminUIContext.jsx';
+import api from '../services/api.js';
 
 const AdminDataContext = createContext(null);
 
@@ -44,6 +45,24 @@ export function AdminDataProvider({ children }) {
     }).catch(err => {
       console.warn('Initial agents load failed:', err);
     });
+    return () => { mounted = false; };
+  }, []);
+
+  // Load latest funeral homes from backend API
+  useEffect(() => {
+    let mounted = true;
+    api.get('/funeral-homes')
+      .then(res => {
+        if (mounted && Array.isArray(res.data) && res.data.length > 0) {
+          setAdminDb(prev => ({
+            ...prev,
+            homes: res.data
+          }));
+        }
+      })
+      .catch(err => {
+        console.warn('Initial funeral homes load failed:', err);
+      });
     return () => { mounted = false; };
   }, []);
 

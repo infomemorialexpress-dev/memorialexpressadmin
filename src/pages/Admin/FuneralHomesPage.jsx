@@ -4,6 +4,7 @@ import Button from '../../components/common/Button.jsx';
 import InputField from '../../components/common/InputField.jsx';
 import FuneralHomeModal from '../../components/Admin/FuneralHomeModal.jsx';
 import api from '../../services/api.js';
+import { getStoredDb } from '../../services/base/apiClient.js';
 
 export default function FuneralHomesPage() {
   const { lang, addToast } = useAdminUI();
@@ -32,6 +33,10 @@ export default function FuneralHomesPage() {
           ? 'No se pudieron cargar las funerarias. Verifique la conexión con el servidor.'
           : 'Could not load funeral homes. Please check server connection.');
       setError(msg);
+      const fallback = getStoredDb()?.homes || [];
+      if (fallback.length > 0) {
+        setHomes(fallback);
+      }
     } finally {
       setIsLoading(false);
     }
