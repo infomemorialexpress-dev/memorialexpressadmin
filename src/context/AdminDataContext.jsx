@@ -66,6 +66,61 @@ export function AdminDataProvider({ children }) {
     return () => { mounted = false; };
   }, []);
 
+  // Live services from MongoDB Atlas for selected funeral home
+  const [serviceItems, setServiceItems] = useState([]);
+  const [isLoadingServices, setIsLoadingServices] = useState(false);
+
+  // Load live catalog services for active funeral home from backend API
+  useEffect(() => {
+    let mounted = true;
+    if (!selectedHomeId) return;
+
+    setIsLoadingServices(true);
+    api.get(`/catalog/location/${selectedHomeId}?type=SERVICE`)
+      .then(res => {
+        if (mounted && Array.isArray(res.data) && res.data.length > 0) {
+          setServiceItems(res.data);
+          // Sync live prices into adminDb.packages so PackagePricingTable displays MongoDB values
+          setAdminDb(prev => {
+            const nextPackages = { ...(prev.packages || {}) };
+            for (const item of res.data) {
+              const nameLower = (item.name || '').toLowerCase();
+              let svcSlug = '';
+              if (nameLower.includes('two-day') || nameLower.includes('two day') || nameLower.includes('2 day')) svcSlug = 'two_day';
+              else if (nameLower.includes('one-day') || nameLower.includes('one day') || nameLower.includes('1 day')) svcSlug = 'one_day';
+              else if (nameLower.includes('traditional cremation')) svcSlug = 'traditional_cremation';
+              else if (nameLower.includes('memorial cremation')) svcSlug = 'memorial_cremation';
+              else if (nameLower.includes('direct cremation')) svcSlug = 'direct_cremation';
+              else if (nameLower.includes('ship out with') || nameLower.includes('ship traditional')) svcSlug = 'ship_traditional';
+              else if (nameLower.includes('direct ship') || nameLower.includes('ship')) svcSlug = 'ship_direct';
+              else svcSlug = item._id;
+
+              const packageKey = `${selectedHomeId}|${svcSlug}`;
+              nextPackages[packageKey] = {
+                section1: item.section1Price !== null && item.section1Price !== undefined ? item.section1Price : (nextPackages[packageKey]?.section1 || 0),
+                section2: item.section2Price !== null && item.section2Price !== undefined ? item.section2Price : (nextPackages[packageKey]?.section2 || 0),
+                verified: true,
+                catalogId: item._id,
+                name: item.name
+              };
+            }
+            return {
+              ...prev,
+              packages: nextPackages
+            };
+          });
+        }
+      })
+      .catch(err => {
+        console.warn('Live catalog services load failed:', err);
+      })
+      .finally(() => {
+        if (mounted) setIsLoadingServices(false);
+      });
+
+    return () => { mounted = false; };
+  }, [selectedHomeId]);
+
   // Ensure selectedHomeId stays valid if homes list updates
   useEffect(() => {
     if (adminDb?.homes?.length > 0) {
@@ -190,23 +245,56 @@ export function AdminDataProvider({ children }) {
     const currentPkg = adminDb.packages?.[packageKey] || { section1: 0, section2: 0, verified: true };
     const updatedPkg = { ...currentPkg, [sectionKey]: val };
 
+    // 1. Update state immediately for responsive admin UI
+    setAdminDb(prev => ({
+      ...prev,
+      packages: {
+        ...(prev.packages || {}),
+        [packageKey]: updatedPkg
+      }
+    }));
+
+    // 2. Persist to MongoDB Atlas via /catalog API
     try {
-      const res = await updatePrices(homeId, {
+      let catalogId = currentPkg.catalogId;
+      if (!catalogId && Array.isArray(serviceItems)) {
+        const matched = serviceItems.find(item => {
+          const nameLower = (item.name || '').toLowerCase();
+          if (serviceId === 'two_day' && nameLower.includes('two')) return true;
+          if (serviceId === 'one_day' && nameLower.includes('one')) return true;
+          if (serviceId === 'traditional_cremation' && nameLower.includes('traditional cremation')) return true;
+          if (serviceId === 'memorial_cremation' && nameLower.includes('memorial cremation')) return true;
+          if (serviceId === 'direct_cremation' && nameLower.includes('direct cremation')) return true;
+          if (serviceId === 'ship_traditional' && nameLower.includes('ship out with')) return true;
+          if (serviceId === 'ship_direct' && nameLower.includes('direct ship')) return true;
+          return item._id === serviceId;
+        });
+        if (matched) catalogId = matched._id;
+      }
+
+      if (catalogId) {
+        const fieldName = sectionKey === 'section1' ? 'section1Price' : 'section2Price';
+        await api.patch(`/catalog/${catalogId}`, {
+          [fieldName]: val
+        });
+      }
+
+      // Also persist to local storage cache as backup
+      await updatePrices(homeId, {
         packages: {
           [packageKey]: updatedPkg
         }
       });
-      if (res.success) {
-        setAdminDb(res.db);
-        addToast(
-          lang === 'es' ? 'Paquete de servicio actualizado.' : 'Service package rate updated.',
-          'success'
-        );
-      }
+
+      addToast(
+        lang === 'es' ? 'Paquete de servicio guardado en MongoDB Atlas.' : 'Service package saved to MongoDB Atlas.',
+        'success'
+      );
     } catch (err) {
+      console.error('Failed to sync package price to backend:', err);
       addToast(formatErrorMessage(err), 'error');
     }
-  }, [addToast, adminDb.packages, lang]);
+  }, [addToast, adminDb.packages, lang, serviceItems]);
 
   const handleAddItem = useCallback(async ({ name, price, category, homeId, description = '', image = '' }) => {
     const priceNum = Math.max(0, Number(price) || 0);
@@ -480,6 +568,8 @@ export function AdminDataProvider({ children }) {
         selectedHomeId,
         setSelectedHomeId,
         activeHome,
+        serviceItems,
+        isLoadingServices,
 
         // Homes
         handleAddHome,

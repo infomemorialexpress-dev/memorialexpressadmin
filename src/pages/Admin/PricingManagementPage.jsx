@@ -14,6 +14,8 @@ export default function PricingManagementPage() {
     selectedHomeId,
     setSelectedHomeId,
     activeHome,
+    serviceItems,
+    isLoadingServices,
     handlePackagePriceChange,
     handleAddItem,
     handleUpdateItem,
@@ -294,6 +296,8 @@ export default function PricingManagementPage() {
             <PackagePricingTable
               homeId={currentHomeId}
               packages={adminDb.packages || {}}
+              serviceItems={serviceItems}
+              isLoadingServices={isLoadingServices}
               onPackageChange={handlePackagePriceChange}
               lang={lang}
             />

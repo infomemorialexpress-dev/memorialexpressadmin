@@ -5,13 +5,37 @@ import { formatMoney } from '../../utils/quoteLogic.js';
 export default function PackagePricingTable({
   homeId,
   packages = {},
+  serviceItems = [],
+  isLoadingServices = false,
   onPackageChange,
   lang = 'en'
 }) {
-  const serviceList = LEGACY_DATA.SERVICES || [];
+  // If backend returns serviceItems, map them to standard tuples; otherwise fallback to LEGACY_DATA.SERVICES
+  const serviceList = (Array.isArray(serviceItems) && serviceItems.length > 0)
+    ? serviceItems.map(item => {
+        const nameLower = (item.name || '').toLowerCase();
+        let svcSlug = '';
+        if (nameLower.includes('two-day') || nameLower.includes('two day') || nameLower.includes('2 day')) svcSlug = 'two_day';
+        else if (nameLower.includes('one-day') || nameLower.includes('one day') || nameLower.includes('1 day')) svcSlug = 'one_day';
+        else if (nameLower.includes('traditional cremation')) svcSlug = 'traditional_cremation';
+        else if (nameLower.includes('memorial cremation')) svcSlug = 'memorial_cremation';
+        else if (nameLower.includes('direct cremation')) svcSlug = 'direct_cremation';
+        else if (nameLower.includes('ship out with') || nameLower.includes('ship traditional')) svcSlug = 'ship_traditional';
+        else if (nameLower.includes('direct ship') || nameLower.includes('ship')) svcSlug = 'ship_direct';
+        else svcSlug = item._id;
+
+        return [svcSlug, item.name, item];
+      })
+    : (LEGACY_DATA.SERVICES || []).map(([id, label]) => [id, label, null]);
 
   return (
     <div className="table-responsive-wrapper">
+      {isLoadingServices && (
+        <div style={{ padding: '8px 12px', fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #cbd5e1', borderTopColor: '#183655', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          {lang === 'es' ? 'Sincronizando paquetes con MongoDB Atlas...' : 'Syncing service packages with MongoDB Atlas...'}
+        </div>
+      )}
       <table className="admin-data-grid">
         <thead>
           <tr>
@@ -29,12 +53,15 @@ export default function PackagePricingTable({
           </tr>
         </thead>
         <tbody>
-          {serviceList.map(([serviceId, serviceLabel]) => {
+          {serviceList.map(([serviceId, serviceLabel, rawItem]) => {
             const packageKey = `${homeId}|${serviceId}`;
-            const pkg = packages[packageKey] || { section1: 0, section2: 0, verified: true };
-            const s1 = Number(pkg.section1) || 0;
-            const s2 = Number(pkg.section2) || 0;
+            const pkg = packages[packageKey] || {};
+            
+            // Priority: packages[packageKey] -> rawItem -> 0
+            const s1 = Number(pkg.section1 !== undefined ? pkg.section1 : (rawItem?.section1Price ?? 0)) || 0;
+            const s2 = Number(pkg.section2 !== undefined ? pkg.section2 : (rawItem?.section2Price ?? 0)) || 0;
             const total = s1 + s2;
+            const hasAtlasRecord = Boolean(pkg.catalogId || rawItem?._id);
 
             const isCremation = serviceId.includes('cremation');
             const isShip = serviceId.includes('ship');
@@ -42,11 +69,27 @@ export default function PackagePricingTable({
             return (
               <tr key={serviceId}>
                 <td>
-                  <div style={{ fontWeight: 650, color: '#183655' }}>
+                  <div style={{ fontWeight: 650, color: '#183655', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {serviceLabel}
+                    {hasAtlasRecord && (
+                      <span
+                        title="Live MongoDB Atlas Record"
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          backgroundColor: '#ecfdf5',
+                          color: '#059669',
+                          border: '1px solid #a7f3d0',
+                          padding: '1px 6px',
+                          borderRadius: '10px',
+                        }}
+                      >
+                        MongoDB
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: 11.5, color: '#64748b' }}>
-                    Key: {packageKey}
+                    ID: {rawItem?._id ? `${rawItem._id.slice(-6)} (${packageKey})` : packageKey}
                   </div>
                 </td>
                 <td>
