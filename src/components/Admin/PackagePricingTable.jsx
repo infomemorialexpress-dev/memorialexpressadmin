@@ -61,35 +61,14 @@ export default function PackagePricingTable({
             const s1 = Number(pkg.section1 !== undefined ? pkg.section1 : (rawItem?.section1Price ?? 0)) || 0;
             const s2 = Number(pkg.section2 !== undefined ? pkg.section2 : (rawItem?.section2Price ?? 0)) || 0;
             const total = s1 + s2;
-            const hasAtlasRecord = Boolean(pkg.catalogId || rawItem?._id);
-
             const isCremation = serviceId.includes('cremation');
             const isShip = serviceId.includes('ship');
 
             return (
               <tr key={serviceId}>
                 <td>
-                  <div style={{ fontWeight: 650, color: '#183655', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ fontWeight: 650, color: '#183655' }}>
                     {serviceLabel}
-                    {hasAtlasRecord && (
-                      <span
-                        title="Live MongoDB Atlas Record"
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: 700,
-                          backgroundColor: '#ecfdf5',
-                          color: '#059669',
-                          border: '1px solid #a7f3d0',
-                          padding: '1px 6px',
-                          borderRadius: '10px',
-                        }}
-                      >
-                        MongoDB
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: '#64748b' }}>
-                    ID: {rawItem?._id ? `${rawItem._id.slice(-6)} (${packageKey})` : packageKey}
                   </div>
                 </td>
                 <td>

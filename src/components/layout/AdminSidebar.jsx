@@ -117,6 +117,7 @@ export default function AdminSidebar({ isMobileOpen, onCloseMobile }) {
                 <NavLink
                   to={item.to}
                   end={item.end}
+                  title={item.label}
                   className={({ isActive }) =>
                     `sidebar-link ${isActive ? 'active' : ''}`
                   }
@@ -134,7 +135,7 @@ export default function AdminSidebar({ isMobileOpen, onCloseMobile }) {
 
         {/* Sidebar Footer User Info & Logout */}
         <div className="sidebar-footer">
-          <div className="user-profile-badge">
+          <div className="user-profile-badge" title={adminUser?.username || 'Administrator'}>
             <div className="user-avatar-circle">
               {(adminUser?.username || 'A').charAt(0).toUpperCase()}
             </div>

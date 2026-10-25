@@ -20,11 +20,20 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     try {
-      const raw = localStorage.getItem('memorial_admin_auth');
+      const raw =
+        localStorage.getItem('memorial_express_admin_token') ||
+        localStorage.getItem('memorial_admin_auth') ||
+        localStorage.getItem('token');
       if (raw) {
-        const session = JSON.parse(raw);
-        if (session?.token) {
-          config.headers.Authorization = `Bearer ${session.token}`;
+        let token = null;
+        try {
+          const session = JSON.parse(raw);
+          token = session?.token || session?.access_token || (typeof session === 'string' ? session : null);
+        } catch {
+          token = raw;
+        }
+        if (token && typeof token === 'string') {
+          config.headers.Authorization = `Bearer ${token.trim()}`;
         }
       }
     } catch (e) {

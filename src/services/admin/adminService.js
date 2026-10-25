@@ -43,7 +43,9 @@ export async function authenticateAdmin(credentials = {}) {
           };
 
           try {
-            localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify(adminSession));
+            const sessionStr = JSON.stringify(adminSession);
+            localStorage.setItem(ADMIN_AUTH_KEY, sessionStr);
+            localStorage.setItem('memorial_admin_auth', sessionStr);
           } catch (storageErr) {
             console.warn('Could not persist admin session to localStorage', storageErr);
           }
@@ -82,7 +84,9 @@ export async function authenticateAdmin(credentials = {}) {
       };
 
       try {
-        localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify(adminSession));
+        const sessionStr = JSON.stringify(adminSession);
+        localStorage.setItem(ADMIN_AUTH_KEY, sessionStr);
+        localStorage.setItem('memorial_admin_auth', sessionStr);
       } catch (storageErr) {
         console.warn('Could not persist admin session to localStorage', storageErr);
       }
@@ -142,6 +146,7 @@ export async function verifyAdminSession(tokenToCheck = null) {
 export async function logoutAdmin() {
   try {
     localStorage.removeItem(ADMIN_AUTH_KEY);
+    localStorage.removeItem('memorial_admin_auth');
     return { success: true };
   } catch (error) {
     console.error('[adminService.logoutAdmin] Logout error:', error);

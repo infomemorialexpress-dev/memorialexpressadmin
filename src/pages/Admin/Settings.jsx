@@ -17,6 +17,9 @@ export default function Settings() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState(null);
 
@@ -109,11 +112,23 @@ export default function Settings() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
-      const errorMsg =
-        err.userMessage ||
-        (lang === 'es'
+      let errorMsg = err.userMessage;
+      if (err.response?.status === 401) {
+        const msg = String(err.response?.data?.message || err.userMessage || '').toLowerCase();
+        if (msg.includes('current password')) {
+          errorMsg = lang === 'es'
+            ? 'La contraseña actual no coincide.'
+            : 'Current password does not match.';
+        } else {
+          errorMsg = lang === 'es'
+            ? 'Sesión no autorizada o expirada. Por favor vuelva a iniciar sesión.'
+            : 'Unauthorized or session expired. Please log in again.';
+        }
+      } else if (!errorMsg) {
+        errorMsg = lang === 'es'
           ? 'Error al actualizar la contraseña. Verifique su contraseña actual.'
-          : 'Failed to update password. Please verify your current password.');
+          : 'Failed to update password. Please verify your current password.';
+      }
 
       setFeedbackMessage({
         type: 'error',
@@ -130,6 +145,62 @@ export default function Settings() {
   const displayEmail = profile?.email || adminUser?.email || adminUser?.username || 'admin@memorialexpress.com';
   const displayRole = profile?.role === 'SUPER_ADMIN' ? 'Super Admin' : (profile?.role || 'Super Admin');
   const displayStatus = profile?.status || 'Active & Authorized';
+  const renderPasswordToggle = (isVisible, onToggle, fieldLabel) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      style={{
+        background: 'none',
+        border: 'none',
+        padding: '4px',
+        cursor: 'pointer',
+        color: '#64748b',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 4,
+        transition: 'color 0.2s ease',
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.color = '#183655')}
+      onMouseLeave={(e) => (e.currentTarget.style.color = '#64748b')}
+      title={
+        isVisible
+          ? (lang === 'es' ? 'Ocultar contraseña' : 'Hide password')
+          : (lang === 'es' ? 'Mostrar contraseña' : 'Show password')
+      }
+      aria-label={isVisible ? `Hide ${fieldLabel}` : `Show ${fieldLabel}`}
+    >
+      {isVisible ? (
+        <svg
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </svg>
+      ) : (
+        <svg
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )}
+    </button>
+  );
 
   return (
     <div className="settings-page">
@@ -275,19 +346,24 @@ export default function Settings() {
               <InputField
                 id="current-password"
                 name="currentPassword"
-                type="password"
+                type={showCurrentPassword ? 'text' : 'password'}
                 label={lang === 'es' ? 'Contraseña Actual' : 'Current Password'}
                 placeholder="••••••••"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 required
+                rightElement={renderPasswordToggle(
+                  showCurrentPassword,
+                  () => setShowCurrentPassword((prev) => !prev),
+                  'Current password'
+                )}
               />
 
               <div className="form-grid-two">
                 <InputField
                   id="new-password"
                   name="newPassword"
-                  type="password"
+                  type={showNewPassword ? 'text' : 'password'}
                   label={lang === 'es' ? 'Nueva Contraseña' : 'New Password'}
                   placeholder="••••••••"
                   value={newPassword}
@@ -298,17 +374,27 @@ export default function Settings() {
                       : 'Must be at least 8 characters long with letters and numbers.'
                   }
                   required
+                  rightElement={renderPasswordToggle(
+                    showNewPassword,
+                    () => setShowNewPassword((prev) => !prev),
+                    'New password'
+                  )}
                 />
 
                 <InputField
                   id="confirm-password"
                   name="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   label={lang === 'es' ? 'Confirmar Nueva Contraseña' : 'Confirm Password'}
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  rightElement={renderPasswordToggle(
+                    showConfirmPassword,
+                    () => setShowConfirmPassword((prev) => !prev),
+                    'Confirm password'
+                  )}
                 />
               </div>
 

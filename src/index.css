@@ -1006,7 +1006,7 @@ p.page-subtitle {
   height: 100vh;
   z-index: 100;
   box-shadow: 2px 0 12px rgba(24, 54, 85, 0.12);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sidebar-brand {
@@ -2835,13 +2835,18 @@ p.page-subtitle {
 }
 
 /* Responsive Media Queries */
-@media (max-width: 960px) {
+
+/* 1. Below 765px: Sidebar is hidden by default; only the toggle button is shown in topbar */
+@media (max-width: 764.98px) {
   .admin-sidebar {
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
+    width: 260px;
+    min-width: 260px;
     transform: translateX(-100%);
+    z-index: 100;
   }
 
   .admin-sidebar.mobile-open {
@@ -2857,15 +2862,149 @@ p.page-subtitle {
   }
 
   .sidebar-toggle-btn {
-    display: flex;
+    display: flex !important;
   }
 
   .sidebar-mobile-close {
-    display: block;
+    display: block !important;
   }
 
   .dashboard-content-split {
     grid-template-columns: 1fr;
+  }
+}
+
+/* 2. From 765px to 1024px: Icon-only sidebar; text labels and toggle button hidden */
+@media (min-width: 765px) and (max-width: 1024px) {
+  .admin-sidebar {
+    position: sticky;
+    top: 0;
+    width: 72px !important;
+    min-width: 72px !important;
+    transform: none !important;
+    overflow-x: hidden;
+  }
+
+  /* Hide text labels, text blocks, and close button */
+  .sidebar-label,
+  .sidebar-section-label,
+  .brand-text-block,
+  .user-info-text,
+  .sidebar-logout-btn span,
+  .sidebar-mobile-close,
+  .sidebar-backdrop {
+    display: none !important;
+  }
+
+  /* Hide toggle button in icon-only mode */
+  .sidebar-toggle-btn {
+    display: none !important;
+  }
+
+  /* Centered Brand Icon */
+  .sidebar-brand {
+    padding: 18px 0 !important;
+    justify-content: center !important;
+  }
+
+  .sidebar-brand-inner {
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+
+  .sidebar-brand-icon {
+    width: 38px !important;
+    height: 38px !important;
+    margin: 0 auto !important;
+  }
+
+  /* Centered Navigation Menu */
+  .sidebar-nav {
+    padding: 16px 8px !important;
+  }
+
+  .sidebar-menu {
+    gap: 8px !important;
+    align-items: center !important;
+  }
+
+  .sidebar-menu-item {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  .sidebar-link {
+    width: 48px !important;
+    height: 48px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    border-radius: 12px !important;
+  }
+
+  .sidebar-icon {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .sidebar-link.active {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    border-left: 3px solid #d4af37 !important;
+  }
+
+  /* Centered Footer */
+  .sidebar-footer {
+    padding: 14px 8px !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+
+  .user-profile-badge {
+    padding: 0 !important;
+    justify-content: center !important;
+  }
+
+  .user-avatar-circle {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 14px !important;
+    margin: 0 auto !important;
+  }
+
+  .sidebar-logout-btn {
+    width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+  }
+
+  .sidebar-logout-btn svg {
+    margin: 0 !important;
+  }
+
+  .dashboard-content-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 3. Above 1024px: Full expanded sidebar */
+@media (min-width: 1024.02px) {
+  .admin-sidebar {
+    width: 260px;
+    min-width: 260px;
+    transform: none !important;
+  }
+
+  .sidebar-toggle-btn {
+    display: none !important;
+  }
+
+  .sidebar-mobile-close {
+    display: none !important;
   }
 }
 
