@@ -669,7 +669,7 @@ export default function FuneralHomeModal({
                 ➕ {lang === 'es' ? 'Subir Nuevo Documento PDF' : 'Upload New Release Document (PDF)'}
               </span>
               <span style={{ fontSize: '12px', color: '#64748b' }}>
-                PDF max 25MB
+                PDF max 50MB
               </span>
             </div>
 
@@ -690,14 +690,15 @@ export default function FuneralHomeModal({
             )}
 
             <div
+              className="custom-forms-upload-grid"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'minmax(220px, 1fr) minmax(200px, 1fr) auto',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
                 gap: '12px',
                 alignItems: 'end',
               }}
             >
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label
                   style={{
                     display: 'block',
@@ -711,7 +712,7 @@ export default function FuneralHomeModal({
                 </label>
                 <input
                   type="text"
-                  placeholder={lang === 'es' ? 'ej. Autorización de Cremación' : 'e.g. Cremation Authorization & Release'}
+                  placeholder={lang === 'es' ? 'ej. Autorización de Cremación' : 'e.g. Cremation Release'}
                   value={newFormTitle}
                   onChange={(e) => setNewFormTitle(e.target.value)}
                   className="form-input"
@@ -720,14 +721,14 @@ export default function FuneralHomeModal({
                     borderRadius: '8px',
                     border: '1px solid #cbd5e1',
                     padding: '0 12px',
-                    fontSize: '13.5px',
+                    fontSize: '13px',
                     width: '100%',
                     boxSizing: 'border-box',
                   }}
                 />
               </div>
 
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label
                   style={{
                     display: 'block',
@@ -747,7 +748,7 @@ export default function FuneralHomeModal({
                   style={{
                     height: '40px',
                     padding: '6px 8px',
-                    fontSize: '12.5px',
+                    fontSize: '12px',
                     borderRadius: '8px',
                     border: '1px solid #cbd5e1',
                     backgroundColor: '#ffffff',
@@ -758,18 +759,27 @@ export default function FuneralHomeModal({
                 />
               </div>
 
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <Button
                   variant="primary"
                   type="button"
                   onClick={handleUploadForm}
                   loading={isUploadingPdf}
                   disabled={!selectedPdfFile || !newFormTitle.trim()}
-                  style={{ height: '40px', whiteSpace: 'nowrap' }}
+                  style={{
+                    height: '40px',
+                    width: '100%',
+                    whiteSpace: 'nowrap',
+                    padding: '0 14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '13px',
+                  }}
                 >
                   {isUploadingPdf
                     ? (lang === 'es' ? 'Subiendo...' : 'Uploading...')
-                    : (lang === 'es' ? 'Subir y Adjuntar' : 'Upload & Attach')}
+                    : (lang === 'es' ? '📤 Subir y Adjuntar' : '📤 Upload & Attach')}
                 </Button>
               </div>
             </div>

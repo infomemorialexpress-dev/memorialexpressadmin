@@ -1,16 +1,73 @@
 import React, { useState, useRef } from 'react';
 
+/**
+ * Resizes and compresses an image file using an offscreen canvas
+ * Converts large phone/camera photos down to lightweight high-res JPEGs (~150KB)
+ */
+function compressImage(file, maxWidth = 1280, maxHeight = 1280, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    if (file.type === 'image/svg+xml') {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target.result);
+          return;
+        }
+
+        // Draw white background in case of transparent PNG
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl);
+      };
+      img.onerror = () => reject(new Error('Failed to load image for compression'));
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function ImageUpload({
   label = 'Funeral Home Image',
   value = '',
   onChange,
-  hint = 'Upload a photo of the funeral home facade, chapel, or facility logo (JPEG, PNG, WebP up to 4MB).'
+  hint = 'Upload a photo of the funeral home facade, chapel, or facility logo (JPEG, PNG, WebP up to 10MB).'
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef(null);
 
-  const handleProcessFile = (file) => {
+  const handleProcessFile = async (file) => {
     setUploadError('');
     if (!file) return;
 
@@ -19,22 +76,27 @@ export default function ImageUpload({
       return;
     }
 
-    if (file.size > 4 * 1024 * 1024) {
-      setUploadError('Image size exceeds 4MB. Please choose a smaller photo.');
+    if (file.size > 15 * 1024 * 1024) {
+      setUploadError('Image size exceeds 15MB. Please choose a smaller photo.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target.result;
+    try {
+      const compressedDataUrl = await compressImage(file, 1280, 1280, 0.82);
       if (onChange) {
-        onChange(dataUrl);
+        onChange(compressedDataUrl);
       }
-    };
-    reader.onerror = () => {
-      setUploadError('Failed to read image file. Please try another image.');
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.warn('[ImageUpload] Compression fallback:', err);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (onChange) onChange(e.target.result);
+      };
+      reader.onerror = () => {
+        setUploadError('Failed to read image file. Please try another image.');
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleFileChange = (e) => {
