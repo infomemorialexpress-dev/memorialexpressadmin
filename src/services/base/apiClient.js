@@ -1,5 +1,4 @@
 // Base API Client and Shared Utilities for MemorialExpress
-import { LEGACY_DATA } from '../../utils/legacyData.js';
 
 export const STORAGE_KEY = 'legacy_simple_v5';
 export const ADMIN_AUTH_KEY = 'memorial_express_admin_token';
@@ -28,7 +27,7 @@ export function formatErrorMessage(error) {
 }
 
 /**
- * Safely retrieves stored database from local storage with fallback
+ * Safely retrieves stored database from local storage
  */
 export function getStoredDb() {
   try {
@@ -42,9 +41,9 @@ export function getStoredDb() {
       }
     }
   } catch (err) {
-    console.warn('[apiClient] Failed to parse localStorage db, fallback to initial DB', err);
+    console.warn('[apiClient] Failed to parse localStorage db', err);
   }
-  return JSON.parse(JSON.stringify(LEGACY_DATA.initialDb));
+  return { homes: [], caskets: [], addons: [], packages: {}, fees: {} };
 }
 
 /**

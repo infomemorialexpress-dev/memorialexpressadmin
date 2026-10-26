@@ -5,6 +5,7 @@ import Button from '../../components/common/Button.jsx';
 import InputField from '../../components/common/InputField.jsx';
 import PackagePricingTable from '../../components/Admin/PackagePricingTable.jsx';
 import AddItemModal from '../../components/Admin/AddItemModal.jsx';
+import AddServicePackageModal from '../../components/Admin/AddServicePackageModal.jsx';
 import EditItemModal from '../../components/Admin/EditItemModal.jsx';
 import { formatMoney } from '../../utils/quoteLogic.js';
 
@@ -17,6 +18,8 @@ export default function PricingManagementPage() {
     serviceItems,
     isLoadingServices,
     handlePackagePriceChange,
+    handleAddServicePackage,
+    handleDeleteServicePackage,
     handleAddItem,
     handleUpdateItem,
     handleDeleteCasket,
@@ -27,6 +30,7 @@ export default function PricingManagementPage() {
   const [activeTab, setActiveTab] = useState('caskets'); // 'caskets' | 'services' | 'addons'
   const [filterQuery, setFilterQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddPackageModalOpen, setIsAddPackageModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editingItemType, setEditingItemType] = useState('casket');
@@ -34,16 +38,18 @@ export default function PricingManagementPage() {
   const homes = adminDb?.homes || [];
   const currentHomeId = selectedHomeId || homes[0]?.id || 'optima';
 
-  // Filter caskets exclusively for this location (or global '*')
+  // Filter caskets exclusively for this location
   const visibleCaskets = (adminDb.caskets || []).filter((c) => {
-    const matchesHome = c.home === currentHomeId || c.home === '*' || !c.home;
+    const itemHome = c.funeralHomeId || c.assignedFuneralHomeId || c.home;
+    const matchesHome = itemHome === currentHomeId;
     const matchesQuery = !filterQuery || c.name?.toLowerCase().includes(filterQuery.toLowerCase());
     return matchesHome && matchesQuery;
   });
 
-  // Filter addons exclusively for this location (or global '*')
+  // Filter addons exclusively for this location
   const visibleAddons = (adminDb.addons || []).filter((a) => {
-    const matchesHome = a.home === currentHomeId || a.home === '*';
+    const itemHome = a.funeralHomeId || a.assignedFuneralHomeId || a.home;
+    const matchesHome = itemHome === currentHomeId;
     const matchesQuery = !filterQuery || a.name?.toLowerCase().includes(filterQuery.toLowerCase());
     return matchesHome && matchesQuery;
   });
@@ -114,7 +120,9 @@ export default function PricingManagementPage() {
             onClick={() => setActiveTab('services')}
           >
             📋 {lang === 'es' ? 'Paquetes de Servicios' : 'Service Packages'}
-            <span className="tab-count-badge">7</span>
+            <span className="tab-count-badge">
+              {7 + (serviceItems || []).filter(s => s.isCustom).length}
+            </span>
           </button>
 
           <button
@@ -139,9 +147,15 @@ export default function PricingManagementPage() {
 
           <Button
             variant="primary"
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              if (activeTab === 'services') {
+                setIsAddPackageModalOpen(true);
+              } else {
+                setIsAddModalOpen(true);
+              }
+            }}
           >
-            ➕ {lang === 'es' ? 'Agregar Artículo a esta Sede' : 'Add Item to this Location'}
+            + {lang === 'es' ? 'Agregar Artículo a esta Sede' : 'Add Item to this Location'}
           </Button>
         </div>
       </div>
@@ -171,6 +185,7 @@ export default function PricingManagementPage() {
                     <th>{lang === 'es' ? 'Modelo de Ataúd' : 'Casket / Merchandise Model'}</th>
                     <th>{lang === 'es' ? 'Material y Acabado' : 'Specifications & Material'}</th>
                     <th style={{ width: 140 }}>{lang === 'es' ? 'Asignación' : 'Assignment'}</th>
+                    <th style={{ width: 130 }}>{lang === 'es' ? 'Estado' : 'Status'}</th>
                     <th style={{ width: 150 }}>{lang === 'es' ? 'Precio de Lista ($)' : 'List Price ($)'}</th>
                     <th style={{ width: 100, textAlign: 'center' }}>{lang === 'es' ? 'Acción' : 'Action'}</th>
                   </tr>
@@ -178,64 +193,114 @@ export default function PricingManagementPage() {
                 <tbody>
                   {visibleCaskets.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="empty-table-cell">
+                      <td colSpan={6} className="empty-table-cell">
                         {lang === 'es'
                           ? 'No se encontraron ataúdes para esta funeraria o filtro.'
                           : 'No casket items found for this location or filter query.'}
                       </td>
                     </tr>
                   ) : (
-                    visibleCaskets.map((casket) => (
-                      <tr key={casket.id}>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            {casket.image ? (
-                              <img
-                                src={casket.image}
-                                alt={casket.name}
-                                style={{
+                    visibleCaskets.map((casket) => {
+                      const isPriceSet = casket.price !== null && casket.price !== undefined && Number(casket.price) > 0;
+                      const isItemActive = isPriceSet && casket.isActive !== false;
+
+                      return (
+                        <tr key={casket.id}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              {casket.image ? (
+                                <img
+                                  src={casket.image}
+                                  alt={casket.name}
+                                  style={{
+                                    width: 40,
+                                    height: 40,
+                                    objectFit: 'cover',
+                                    borderRadius: 6,
+                                    border: '1px solid #e2e8f0',
+                                    flexShrink: 0
+                                  }}
+                                />
+                              ) : (
+                                <div style={{
                                   width: 40,
                                   height: 40,
-                                  objectFit: 'cover',
+                                  background: '#f1f5f9',
                                   borderRadius: 6,
-                                  border: '1px solid #e2e8f0',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: 18,
                                   flexShrink: 0
-                                }}
-                              />
-                            ) : (
-                              <div style={{
-                                width: 40,
-                                height: 40,
-                                background: '#f1f5f9',
-                                borderRadius: 6,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: 18,
-                                flexShrink: 0
-                              }}>
-                                ⚰️
+                                }}>
+                                  ⚰️
+                                </div>
+                              )}
+                              <div>
+                                <div className="item-primary-name">{casket.name}</div>
+                                {casket.assignedPackages?.length > 0 && (
+                                  <div style={{ fontSize: 11, color: '#64748b' }}>
+                                    📦 {casket.assignedPackages.join(', ')}
+                                  </div>
+                                )}
                               </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="item-spec-text">
+                              {casket.specifications || casket.description || 'Standard funeral merchandise'}
+                            </div>
+                          </td>
+                          <td>
+                            <span className="scope-badge location">
+                              {activeHome?.name || casket.home}
+                            </span>
+                          </td>
+                          <td>
+                            {isItemActive ? (
+                              <span style={{
+                                background: '#ecfdf5',
+                                color: '#047857',
+                                border: '1px solid #a7f3d0',
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4
+                              }}>
+                                ✓ {lang === 'es' ? 'Activo' : 'Active'}
+                              </span>
+                            ) : (
+                              <span style={{
+                                background: '#fffbeb',
+                                color: '#b45309',
+                                border: '1px solid #fde68a',
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4
+                              }} title={lang === 'es' ? 'Ingrese un precio para activar este artículo para los agentes' : 'Enter a price to activate this item for agents'}>
+                                ⚠️ {lang === 'es' ? 'Inactivo (Falta precio)' : 'Inactive (Set price)'}
+                              </span>
                             )}
-                            <div className="item-primary-name">{casket.name}</div>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="item-spec-text">
-                            {casket.specifications || casket.description || 'Standard funeral merchandise'}
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`scope-badge ${casket.home === '*' ? 'global' : 'location'}`}>
-                            {casket.home === '*' ? 'Global (*)' : (activeHome?.name || casket.home)}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="price-tag-plain" style={{ fontWeight: 600, fontSize: 14.5, color: '#183655' }}>
-                            ${Number(casket.price || 0).toLocaleString()}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
+                          </td>
+                          <td>
+                            {isPriceSet ? (
+                              <span className="price-tag-plain" style={{ fontWeight: 600, fontSize: 14.5, color: '#183655' }}>
+                                ${Number(casket.price).toLocaleString()}
+                              </span>
+                            ) : (
+                              <span style={{ fontWeight: 600, fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>
+                                $0.00 ({lang === 'es' ? 'Sin precio' : 'Blank'})
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
                           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                             <button
                               type="button"
@@ -269,8 +334,9 @@ export default function PricingManagementPage() {
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
+                    );
+                  })
+                )}
                 </tbody>
               </table>
             </div>
@@ -299,6 +365,7 @@ export default function PricingManagementPage() {
               serviceItems={serviceItems}
               isLoadingServices={isLoadingServices}
               onPackageChange={handlePackagePriceChange}
+              onDeletePackage={(packageId) => handleDeleteServicePackage(currentHomeId, packageId)}
               lang={lang}
             />
           </div>
@@ -326,40 +393,120 @@ export default function PricingManagementPage() {
                   <tr>
                     <th>{lang === 'es' ? 'Nombre del Servicio Adicional' : 'Add-on Item Name'}</th>
                     <th style={{ width: 140 }}>{lang === 'es' ? 'Asignación' : 'Assignment'}</th>
-                    <th style={{ width: 150 }}>{lang === 'es' ? 'Tarifa ($)' : 'Rate ($)'}</th>
+                    <th style={{ width: 130 }}>{lang === 'es' ? 'Estado' : 'Status'}</th>
+                    <th style={{ width: 170 }}>{lang === 'es' ? 'Tarifa ($)' : 'Rate ($)'}</th>
                     <th style={{ width: 100, textAlign: 'center' }}>{lang === 'es' ? 'Acción' : 'Action'}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleAddons.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="empty-table-cell">
+                      <td colSpan={5} className="empty-table-cell">
                         {lang === 'es'
                           ? 'No se encontraron servicios adicionales para esta funeraria o filtro.'
                           : 'No add-on items found for this location or filter query.'}
                       </td>
                     </tr>
                   ) : (
-                    visibleAddons.map((addon) => (
-                      <tr key={addon.id}>
-                        <td>
-                          <div className="item-primary-name">{addon.name}</div>
-                          {addon.description && (
-                            <div className="item-spec-text" style={{ fontSize: 12, color: '#64748b' }}>
-                              {addon.description}
+                    visibleAddons.map((addon) => {
+                      const hasDestinations = Boolean(addon.hasDestinations && addon.destinations?.length > 0);
+                      const isPriceSet = addon.price !== null && addon.price !== undefined && Number(addon.price) > 0;
+                      const isItemActive = hasDestinations || (isPriceSet && addon.isActive !== false);
+
+                      return (
+                        <tr key={addon.id}>
+                          <td>
+                            <div className="item-primary-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {addon.name}
+                              {addon.isMandatory && (
+                                <span style={{
+                                  background: '#fee2e2',
+                                  color: '#b91c1c',
+                                  fontSize: 10.5,
+                                  fontWeight: 700,
+                                  padding: '1px 6px',
+                                  borderRadius: 4
+                                }}>
+                                  {lang === 'es' ? 'OBLIGATORIO' : 'MANDATORY'}
+                                </span>
+                              )}
+                              {hasDestinations && (
+                                <span style={{
+                                  background: '#e0f2fe',
+                                  color: '#0369a1',
+                                  fontSize: 10.5,
+                                  fontWeight: 700,
+                                  padding: '1px 6px',
+                                  borderRadius: 4
+                                }}>
+                                  ✈️ {lang === 'es' ? 'DESTINOS' : 'DESTINATIONS'}
+                                </span>
+                              )}
                             </div>
-                          )}
-                        </td>
-                        <td>
-                          <span className={`scope-badge ${addon.home === '*' ? 'global' : 'location'}`}>
-                            {addon.home === '*' ? 'Global (*)' : (activeHome?.name || addon.home)}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="price-tag-plain" style={{ fontWeight: 600, fontSize: 14.5, color: '#183655' }}>
-                            ${Number(addon.price || 0).toLocaleString()}
-                          </span>
-                        </td>
+                            {addon.description && (
+                              <div className="item-spec-text" style={{ fontSize: 12, color: '#64748b' }}>
+                                {addon.description}
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <span className="scope-badge location">
+                              {activeHome?.name || addon.home}
+                            </span>
+                          </td>
+                          <td>
+                            {isItemActive ? (
+                              <span style={{
+                                background: '#ecfdf5',
+                                color: '#047857',
+                                border: '1px solid #a7f3d0',
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4
+                              }}>
+                                ✓ {lang === 'es' ? 'Activo' : 'Active'}
+                              </span>
+                            ) : (
+                              <span style={{
+                                background: '#fffbeb',
+                                color: '#b45309',
+                                border: '1px solid #fde68a',
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4
+                              }} title={lang === 'es' ? 'Ingrese un precio o configure destinos para activar este artículo' : 'Enter a price or configure destinations to activate this item'}>
+                                ⚠️ {lang === 'es' ? 'Inactivo (Falta precio)' : 'Inactive (Set price)'}
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            {hasDestinations ? (
+                              <div>
+                                <span style={{ fontWeight: 600, fontSize: 13, color: '#0284c7' }}>
+                                  ✈️ {addon.destinations.length} {lang === 'es' ? 'destinos' : 'destinations'}
+                                </span>
+                                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                                  {addon.destinations.map(d => `${d.name}: $${d.defaultPrice}`).join(' • ')}
+                                </div>
+                              </div>
+                            ) : isPriceSet ? (
+                              <span className="price-tag-plain" style={{ fontWeight: 600, fontSize: 14.5, color: '#183655' }}>
+                                ${Number(addon.price).toLocaleString()}
+                              </span>
+                            ) : (
+                              <span style={{ fontWeight: 600, fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>
+                                $0.00 ({lang === 'es' ? 'Sin precio' : 'Blank'})
+                              </span>
+                            )}
+                          </td>
                         <td style={{ textAlign: 'center' }}>
                           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                             <button
@@ -394,8 +541,9 @@ export default function PricingManagementPage() {
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
+                    );
+                  })
+                )}
                 </tbody>
               </table>
             </div>
@@ -411,10 +559,24 @@ export default function PricingManagementPage() {
         locationName={activeHome?.name || 'Selected Funeral Home'}
         locationId={currentHomeId}
         defaultCategory={activeTab === 'addons' ? 'addon' : 'casket'}
+        homes={homes}
+        serviceItems={serviceItems}
         lang={lang}
       />
 
-      {/* 5. MODAL: EDIT ITEM */}
+      {/* 5. MODAL: ADD CUSTOM SERVICE PACKAGE */}
+      <AddServicePackageModal
+        isOpen={isAddPackageModalOpen}
+        onClose={() => setIsAddPackageModalOpen(false)}
+        onSavePackage={async (pkgData) => {
+          return await handleAddServicePackage({ ...pkgData, homeId: currentHomeId });
+        }}
+        locationName={activeHome?.name || 'Selected Funeral Home'}
+        locationId={currentHomeId}
+        lang={lang}
+      />
+
+      {/* 6. MODAL: EDIT ITEM */}
       <EditItemModal
         isOpen={isEditModalOpen}
         onClose={() => {
@@ -426,6 +588,8 @@ export default function PricingManagementPage() {
         }}
         item={editingItem}
         itemType={editingItemType}
+        homes={homes}
+        serviceItems={serviceItems}
         lang={lang}
       />
     </div>

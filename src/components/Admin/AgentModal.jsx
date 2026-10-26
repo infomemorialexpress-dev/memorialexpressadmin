@@ -17,6 +17,8 @@ export default function AgentModal({
     phone: '',
     licenseId: '',
     territory: '',
+    agentNumber: '',
+    uplineName: '',
     assignedHome: '',
     status: 'pending' // 'verified' | 'pending' | 'suspended'
   });
@@ -44,6 +46,8 @@ export default function AgentModal({
         phone: initialData.phone || '',
         licenseId: initialData.licenseId || '',
         territory: initialData.territory || '',
+        agentNumber: initialData.agentNumber || '',
+        uplineName: initialData.uplineName || '',
         assignedHome: homeIdVal,
         status: agentStatus
       });
@@ -57,6 +61,8 @@ export default function AgentModal({
         phone: '',
         licenseId: '',
         territory: '',
+        agentNumber: '',
+        uplineName: '',
         assignedHome: defaultHomeId,
         status: 'pending'
       });
@@ -131,6 +137,8 @@ export default function AgentModal({
         territory: formData.territory.trim(),
         assignedHomeId: matchedHome ? (matchedHome._id || matchedHome.id) : undefined,
         assignedHome: matchedHome ? matchedHome.name : formData.assignedHome,
+        agentNumber: formData.agentNumber.trim(),
+        uplineName: formData.uplineName.trim(),
         status: formData.status,
         verificationStatus: formData.status.toUpperCase()
       };
@@ -319,6 +327,35 @@ export default function AgentModal({
                   placeholder="CA-FD-98421"
                   value={formData.licenseId}
                   onChange={(e) => handleChange('licenseId', e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Row 3.5: Agent Number & Upline's Name */}
+            <div className="agent-form-row-2">
+              <div className="agent-form-group">
+                <label className="agent-form-label">
+                  <span>{lang === 'es' ? 'Número de Agente' : 'Agent Number'}</span>
+                </label>
+                <input
+                  type="text"
+                  className="agent-form-input"
+                  placeholder="e.g. AG-10023"
+                  value={formData.agentNumber}
+                  onChange={(e) => handleChange('agentNumber', e.target.value)}
+                />
+              </div>
+
+              <div className="agent-form-group">
+                <label className="agent-form-label">
+                  <span>{lang === 'es' ? 'Nombre del Upline' : "Upline's Name"}</span>
+                </label>
+                <input
+                  type="text"
+                  className="agent-form-input"
+                  placeholder="e.g. John Doe / Regional Director"
+                  value={formData.uplineName}
+                  onChange={(e) => handleChange('uplineName', e.target.value)}
                 />
               </div>
             </div>

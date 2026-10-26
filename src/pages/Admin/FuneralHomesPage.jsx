@@ -4,7 +4,6 @@ import Button from '../../components/common/Button.jsx';
 import InputField from '../../components/common/InputField.jsx';
 import FuneralHomeModal from '../../components/Admin/FuneralHomeModal.jsx';
 import api from '../../services/api.js';
-import { getStoredDb } from '../../services/base/apiClient.js';
 import { FuneralHomeAdminCardSkeleton } from '../../components/common/SkeletonLoader.jsx';
 import ShimmerImage from '../../components/common/ShimmerImage.jsx';
 
@@ -35,10 +34,7 @@ export default function FuneralHomesPage() {
           ? 'No se pudieron cargar las funerarias. Verifique la conexión con el servidor.'
           : 'Could not load funeral homes. Please check server connection.');
       setError(msg);
-      const fallback = getStoredDb()?.homes || [];
-      if (fallback.length > 0) {
-        setHomes(fallback);
-      }
+      setHomes([]);
     } finally {
       setIsLoading(false);
     }
@@ -286,6 +282,23 @@ export default function FuneralHomesPage() {
                   <div className="card-title-row">
                     <h3 className="card-title">{home.name}</h3>
                   </div>
+
+                  {(home.customNote || home.program) && (
+                    <div
+                      style={{
+                        color: home.noteColor || '#008000',
+                        fontWeight: 700,
+                        fontSize: '12.5px',
+                        marginBottom: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                      }}
+                    >
+                      <span style={{ fontSize: '9px' }}>●</span>
+                      <span>{home.customNote || home.program}</span>
+                    </div>
+                  )}
 
                   <div className="card-meta-list">
                     <div className="meta-row">

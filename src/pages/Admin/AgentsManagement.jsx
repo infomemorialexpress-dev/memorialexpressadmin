@@ -66,11 +66,13 @@ export default function AgentsManagement() {
     const nameMatch = (agent.fullName || agent.name || '').toLowerCase().includes(q);
     const emailMatch = (agent.email || '').toLowerCase().includes(q);
     const licenseMatch = (agent.licenseId || '').toLowerCase().includes(q);
+    const agentNumberMatch = (agent.agentNumber || '').toLowerCase().includes(q);
+    const uplineMatch = (agent.uplineName || '').toLowerCase().includes(q);
     const territoryMatch = (agent.territory || '').toLowerCase().includes(q);
     const homeName = (typeof agent.assignedHome === 'object' ? agent.assignedHome?.name : agent.assignedHome) || '';
     const homeMatch = homeName.toLowerCase().includes(q);
 
-    return nameMatch || emailMatch || licenseMatch || territoryMatch || homeMatch;
+    return nameMatch || emailMatch || licenseMatch || agentNumberMatch || uplineMatch || territoryMatch || homeMatch;
   });
 
   const handleOpenRegisterModal = () => {
@@ -276,7 +278,17 @@ export default function AgentsManagement() {
                         <div>
                           <div className="agent-license-id">
                             <span>🆔</span> {agent.licenseId || 'CA-FD-98421'}
+                            {agent.agentNumber && (
+                              <span style={{ marginLeft: '6px', fontSize: '11px', background: '#e0e7ff', color: '#4338ca', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
+                                #{agent.agentNumber}
+                              </span>
+                            )}
                           </div>
+                          {agent.uplineName && (
+                            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                              <span>⬆️ {lang === 'es' ? 'Upline: ' : 'Upline: '}</span>{agent.uplineName}
+                            </div>
+                          )}
                           <div className="agent-territory">
                             <span>📍</span> {agent.territory || 'Southern California'}
                           </div>

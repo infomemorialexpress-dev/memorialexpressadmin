@@ -8,7 +8,6 @@ import {
   formatErrorMessage,
   ADMIN_AUTH_KEY
 } from '../base/apiClient.js';
-import { LEGACY_DATA } from '../../utils/legacyData.js';
 
 import api from '../api.js';
 
@@ -23,64 +22,25 @@ export async function authenticateAdmin(credentials = {}) {
     const { email, username, password } = credentials || {};
     const loginEmail = (email || username || '').trim();
 
-    // 1. Try real NestJS backend POST /auth/login
-    if (loginEmail && password) {
-      try {
-        const response = await api.post('/auth/login', {
-          email: loginEmail,
-          password
-        });
-
-        if (response.data?.access_token) {
-          const token = response.data.access_token;
-          const adminSession = {
-            token,
-            role: response.data.user?.role || 'SUPER_ADMIN',
-            email: response.data.user?.email || loginEmail,
-            username: response.data.user?.email || loginEmail,
-            issuedAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-          };
-
-          try {
-            const sessionStr = JSON.stringify(adminSession);
-            localStorage.setItem(ADMIN_AUTH_KEY, sessionStr);
-            localStorage.setItem('memorial_admin_auth', sessionStr);
-          } catch (storageErr) {
-            console.warn('Could not persist admin session to localStorage', storageErr);
-          }
-
-          return {
-            success: true,
-            token,
-            admin: adminSession
-          };
-        }
-      } catch (backendErr) {
-        // If server responded with 401 Unauthorized, rethrow error message directly
-        if (backendErr.response?.status === 401) {
-          throw new ApiError(backendErr.response?.data?.message || 'Invalid email or password', 401);
-        }
-        console.warn('[authenticateAdmin] Backend unreachable, using fallback auth:', backendErr.message);
-      }
+    if (!loginEmail || !password) {
+      throw new ApiError('Email and password are required', 400);
     }
 
-    // 2. Offline / local fallback credentials check
-    const validCreds =
-      (loginEmail === 'admin@memorialexpress.com' && password === 'admin123') ||
-      (loginEmail === 'admin@admin.com' && password === 'admin123') ||
-      (loginEmail === 'admin' && password === 'admin123') ||
-      (loginEmail && password);
+    // Strictly call real NestJS backend POST /auth/login
+    const response = await api.post('/auth/login', {
+      email: loginEmail,
+      password
+    });
 
-    if (validCreds) {
-      const token = 'admin_jwt_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now();
+    if (response.data?.access_token) {
+      const token = response.data.access_token;
       const adminSession = {
         token,
-        role: 'SUPER_ADMIN',
-        email: loginEmail,
-        username: loginEmail || 'admin@admin.com',
+        role: response.data.user?.role || 'SUPER_ADMIN',
+        email: response.data.user?.email || loginEmail,
+        username: response.data.user?.email || loginEmail,
         issuedAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
       };
 
       try {
@@ -98,9 +58,12 @@ export async function authenticateAdmin(credentials = {}) {
       };
     }
 
-    throw new ApiError('Invalid email or password', 401);
+    throw new ApiError('Authentication failed: no access token returned', 401);
   } catch (error) {
     console.error('[adminService.authenticateAdmin] Auth failed:', error);
+    if (error.response?.data?.message) {
+      throw new ApiError(error.response.data.message, error.response.status || 401);
+    }
     throw new ApiError(formatErrorMessage(error), error.status || 500);
   }
 }
@@ -320,14 +283,13 @@ export async function importCatalog(catalogData) {
  */
 export async function resetDemoData() {
   try {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const freshDb = JSON.parse(JSON.stringify(LEGACY_DATA.initialDb));
-    saveStoredDb(freshDb);
-    localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify(DEFAULT_AGENTS));
+    const emptyDb = { homes: [], caskets: [], addons: [], packages: {}, fees: {} };
+    saveStoredDb(emptyDb);
+    localStorage.removeItem(AGENTS_STORAGE_KEY);
     return {
       success: true,
-      db: freshDb,
-      agents: DEFAULT_AGENTS
+      db: emptyDb,
+      agents: []
     };
   } catch (error) {
     console.error('[adminService.resetDemoData] Error resetting demo data:', error);
@@ -419,78 +381,7 @@ export async function deleteFuneralHome(homeId) {
 
 export const AGENTS_STORAGE_KEY = 'memorial_express_admin_agents';
 
-export const DEFAULT_AGENTS = [
-  {
-    id: 'agent_1',
-    name: 'Carlos Mendoza',
-    email: 'carlos.mendoza@memorialexpress.com',
-    password: 'Agent1234!',
-    phone: '(323) 555-0192',
-    licenseId: 'CA-FD-98421',
-    territory: 'East Los Angeles & Montebello',
-    assignedHome: 'Optima Funeral Home',
-    status: 'verified', // 'verified' | 'pending' | 'suspended'
-    joinedDate: '2024-03-15',
-    quotesCount: 48,
-    avatar: ''
-  },
-  {
-    id: 'agent_2',
-    name: 'Elena Rostova',
-    email: 'elena.rostova@memorialexpress.com',
-    password: 'Agent1234!',
-    phone: '(818) 555-0144',
-    licenseId: 'CA-FD-77219',
-    territory: 'San Fernando Valley',
-    assignedHome: 'San Fernando Valley Mortuary',
-    status: 'verified',
-    joinedDate: '2024-05-20',
-    quotesCount: 31,
-    avatar: ''
-  },
-  {
-    id: 'agent_3',
-    name: 'Marcus Vance',
-    email: 'marcus.vance@memorialexpress.com',
-    password: 'Agent1234!',
-    phone: '(562) 555-0188',
-    licenseId: 'CA-FD-65103',
-    territory: 'Long Beach & South Bay',
-    assignedHome: 'Pacific Crest Memorial',
-    status: 'pending',
-    joinedDate: '2024-09-02',
-    quotesCount: 7,
-    avatar: ''
-  },
-  {
-    id: 'agent_4',
-    name: 'Sofia Ramirez',
-    email: 'sofia.ramirez@memorialexpress.com',
-    password: 'Agent1234!',
-    phone: '(714) 555-0131',
-    licenseId: 'CA-FD-88910',
-    territory: 'Orange County & Anaheim',
-    assignedHome: 'Optima Funeral Home',
-    status: 'pending',
-    joinedDate: '2024-10-10',
-    quotesCount: 3,
-    avatar: ''
-  },
-  {
-    id: 'agent_5',
-    name: 'David K. Chen',
-    email: 'david.chen@memorialexpress.com',
-    password: 'Agent1234!',
-    phone: '(626) 555-0177',
-    licenseId: 'CA-FD-54201',
-    territory: 'San Gabriel Valley',
-    assignedHome: 'Pacific Crest Memorial',
-    status: 'suspended',
-    joinedDate: '2023-11-12',
-    quotesCount: 19,
-    avatar: ''
-  }
-];
+export const DEFAULT_AGENTS = [];
 
 /**
  * Normalizes backend agent document or stored agent object to uniform UI format
@@ -512,8 +403,8 @@ function normalizeAgent(agent) {
     assignedHomeObj: agent.assignedHome,
     status: rawStatus,
     verificationStatus: rawStatus.toUpperCase(),
-    joinedDate: agent.createdAt ? agent.createdAt.split('T')[0] : (agent.joinedDate || '2024-03-15'),
-    password: agent.password || 'Agent1234!',
+    joinedDate: agent.createdAt ? agent.createdAt.split('T')[0] : (agent.joinedDate || ''),
+    password: agent.password || '',
     quotesCount: agent.quotesCount || 0,
     avatar: agent.avatar || ''
   };
@@ -530,14 +421,14 @@ export function getStoredAgents() {
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.map(agent => ({
           ...normalizeAgent(agent),
-          password: agent.password || 'Agent1234!'
+          password: agent.password || ''
         }));
       }
     }
   } catch (err) {
     console.warn('[adminService.getStoredAgents] Error parsing agents:', err);
   }
-  return DEFAULT_AGENTS;
+  return [];
 }
 
 /**
@@ -554,18 +445,18 @@ export function saveStoredAgents(agents) {
 }
 
 /**
- * Fetches all sales agents from backend GET /agents with offline fallback.
+ * Fetches all sales agents from backend GET /agents.
  */
 export async function fetchAgents() {
   try {
     const res = await api.get('/agents');
-    if (Array.isArray(res.data) && res.data.length > 0) {
+    if (Array.isArray(res.data)) {
       const normalized = res.data.map(normalizeAgent);
       saveStoredAgents(normalized);
       return normalized;
     }
   } catch (err) {
-    console.warn('[adminService.fetchAgents] Backend fetch failed, falling back to stored:', err.message);
+    console.warn('[adminService.fetchAgents] Backend fetch failed:', err.message);
   }
   return getStoredAgents();
 }
