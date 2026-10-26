@@ -376,9 +376,9 @@ export function AdminDataProvider({ children }) {
       }
     }));
 
-    // 2. Persist to MongoDB Atlas via /catalog API
+    // 2. Persist to MongoDB Atlas via /catalog or /funeral-homes API
     try {
-      let catalogId = currentPkg.catalogId;
+      let catalogId = currentPkg.catalogId || serviceId;
       if (!catalogId && Array.isArray(serviceItems)) {
         const matched = serviceItems.find(item => {
           const nameLower = (item.name || '').toLowerCase();
@@ -389,23 +389,38 @@ export function AdminDataProvider({ children }) {
           if (serviceId === 'direct_cremation' && nameLower.includes('direct cremation')) return true;
           if (serviceId === 'ship_traditional' && nameLower.includes('ship out with')) return true;
           if (serviceId === 'ship_direct' && nameLower.includes('direct ship')) return true;
-          return item._id === serviceId;
+          return item._id === serviceId || item.id === serviceId;
         });
-        if (matched) catalogId = matched._id;
+        if (matched) catalogId = matched._id || matched.id;
       }
 
-      if (catalogId) {
+      const effectiveId = catalogId || serviceId;
+
+      if (effectiveId) {
         const fieldName = sectionKey === 'section1' ? 'section1Price' : 'section2Price';
         try {
-          await api.patch(`/catalog/${catalogId}`, {
+          await api.patch(`/funeral-homes/${homeId}/packages/${effectiveId}`, {
             [fieldName]: val
           });
         } catch {
-          // Fallback to funeral-homes package patch
-          await api.patch(`/funeral-homes/${homeId}/packages/${catalogId}`, {
-            [fieldName]: val
-          });
+          try {
+            await api.patch(`/catalog/${effectiveId}`, {
+              [fieldName]: val
+            });
+          } catch (patchErr) {
+            console.warn('API patch package error:', patchErr);
+          }
         }
+
+        setServiceItems(prev => prev.map(item => {
+          if ((item._id || item.id) === effectiveId) {
+            return {
+              ...item,
+              [fieldName]: val
+            };
+          }
+          return item;
+        }));
       }
 
       // Also persist to local storage cache as backup
