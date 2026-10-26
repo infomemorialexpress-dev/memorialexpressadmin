@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdminData } from '../../context/AdminDataContext.jsx';
 import { useAdminUI } from '../../context/AdminUIContext.jsx';
 import Button from '../../components/common/Button.jsx';
@@ -17,6 +17,7 @@ export default function PricingManagementPage() {
     activeHome,
     serviceItems,
     isLoadingServices,
+    refreshHomes,
     handlePackagePriceChange,
     handleAddServicePackage,
     handleDeleteServicePackage,
@@ -27,6 +28,13 @@ export default function PricingManagementPage() {
   } = useAdminData();
   const { lang } = useAdminUI();
 
+  // Automatically fetch latest funeral homes whenever opening Pricing Management
+  useEffect(() => {
+    if (typeof refreshHomes === 'function') {
+      refreshHomes();
+    }
+  }, [refreshHomes]);
+
   const [activeTab, setActiveTab] = useState('caskets'); // 'caskets' | 'services' | 'addons'
   const [filterQuery, setFilterQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -36,22 +44,25 @@ export default function PricingManagementPage() {
   const [editingItemType, setEditingItemType] = useState('casket');
 
   const homes = adminDb?.homes || [];
-  const currentHomeId = selectedHomeId || homes[0]?.id || 'optima';
+  const currentHomeId = selectedHomeId || homes[0]?._id || homes[0]?.id || '';
 
-  // Filter caskets exclusively for this location
+  // Filter caskets exclusively for this location that actually exist with valid price
   const visibleCaskets = (adminDb.caskets || []).filter((c) => {
     const itemHome = c.funeralHomeId || c.assignedFuneralHomeId || c.home;
-    const matchesHome = itemHome === currentHomeId;
+    const matchesHome = String(itemHome) === String(currentHomeId);
     const matchesQuery = !filterQuery || c.name?.toLowerCase().includes(filterQuery.toLowerCase());
-    return matchesHome && matchesQuery;
+    const hasValidPrice = c.price !== null && c.price !== undefined && Number(c.price) > 0;
+    return matchesHome && matchesQuery && hasValidPrice;
   });
 
-  // Filter addons exclusively for this location
+  // Filter addons exclusively for this location that actually exist with valid price or destinations
   const visibleAddons = (adminDb.addons || []).filter((a) => {
     const itemHome = a.funeralHomeId || a.assignedFuneralHomeId || a.home;
-    const matchesHome = itemHome === currentHomeId;
+    const matchesHome = String(itemHome) === String(currentHomeId);
     const matchesQuery = !filterQuery || a.name?.toLowerCase().includes(filterQuery.toLowerCase());
-    return matchesHome && matchesQuery;
+    const hasDest = Boolean(a.hasDestinations && Array.isArray(a.destinations) && a.destinations.length > 0);
+    const hasValidPrice = (a.price !== null && a.price !== undefined && Number(a.price) > 0) || hasDest;
+    return matchesHome && matchesQuery && hasValidPrice;
   });
 
   const handleOpenEditModal = (item, type = 'casket') => {
@@ -79,11 +90,14 @@ export default function PricingManagementPage() {
                 onChange={(e) => setSelectedHomeId(e.target.value)}
                 className="form-select location-dropdown"
               >
-                {homes.map((home) => (
-                  <option key={home.id} value={home.id}>
-                    {home.name} ({home.city || 'CA'}{home.zip ? ` - ${home.zip}` : ''})
-                  </option>
-                ))}
+                {homes.map((home) => {
+                  const homeId = home._id || home.id;
+                  return (
+                    <option key={homeId} value={homeId}>
+                      {home.name} ({home.city || 'CA'}{(home.zipCode || home.zip) ? ` - ${home.zipCode || home.zip}` : ''})
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
@@ -96,7 +110,7 @@ export default function PricingManagementPage() {
               {activeHome.name}
             </span>
             <span className="home-badge-details">
-              📍 {activeHome.city || 'CA'} • {activeHome.locations?.length || 1} {lang === 'es' ? 'capillas' : 'chapels'}
+              📍 {activeHome.city || 'CA'} • {(activeHome.chapels || activeHome.locations)?.length || 0} {lang === 'es' ? 'capillas' : 'chapels'}
             </span>
           </div>
         )}
@@ -121,7 +135,7 @@ export default function PricingManagementPage() {
           >
             📋 {lang === 'es' ? 'Paquetes de Servicios' : 'Service Packages'}
             <span className="tab-count-badge">
-              {7 + (serviceItems || []).filter(s => s.isCustom).length}
+              {(serviceItems || []).length}
             </span>
           </button>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAdminUI } from '../../context/AdminUIContext.jsx';
+import { useAdminData } from '../../context/AdminDataContext.jsx';
 import Button from '../../components/common/Button.jsx';
 import InputField from '../../components/common/InputField.jsx';
 import FuneralHomeModal from '../../components/Admin/FuneralHomeModal.jsx';
@@ -9,6 +10,7 @@ import ShimmerImage from '../../components/common/ShimmerImage.jsx';
 
 export default function FuneralHomesPage() {
   const { lang, addToast } = useAdminUI();
+  const { refreshHomes, setSelectedHomeId } = useAdminData() || {};
 
   const [homes, setHomes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,6 +84,7 @@ export default function FuneralHomesPage() {
         setHomes((prev) =>
           prev.map((h) => ((h._id === existingId || h.id === existingId) ? updated : h))
         );
+        refreshHomes?.(existingId);
         addToast?.(
           lang === 'es'
             ? `Funeraria "${updated.name}" actualizada con éxito.`
@@ -91,7 +94,10 @@ export default function FuneralHomesPage() {
       } else {
         const response = await api.post('/funeral-homes', homePayload);
         const created = response.data;
+        const newHomeId = created._id || created.id;
         setHomes((prev) => [created, ...prev]);
+        refreshHomes?.(newHomeId);
+        setSelectedHomeId?.(newHomeId);
         addToast?.(
           lang === 'es'
             ? `Funeraria "${created.name}" creada con éxito.`
@@ -122,6 +128,7 @@ export default function FuneralHomesPage() {
       try {
         await api.delete(`/funeral-homes/${homeId}`);
         setHomes((prev) => prev.filter((h) => h._id !== homeId && h.id !== homeId));
+        refreshHomes?.();
         addToast?.(
           lang === 'es'
             ? `Funeraria "${home.name}" eliminada exitosamente.`

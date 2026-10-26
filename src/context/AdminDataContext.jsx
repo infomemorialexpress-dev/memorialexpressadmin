@@ -45,24 +45,35 @@ export function AdminDataProvider({ children }) {
     return () => { mounted = false; };
   }, []);
 
-  // Load latest funeral homes from backend API
-  useEffect(() => {
-    let mounted = true;
-    api.get('/funeral-homes')
-      .then(res => {
-        if (mounted && Array.isArray(res.data) && res.data.length > 0) {
-          setAdminDb(prev => ({
-            ...prev,
-            homes: res.data
-          }));
-          setSelectedHomeId(prev => prev || res.data[0]._id || res.data[0].id || '');
+  // Refresh latest funeral homes from backend API
+  const refreshHomes = useCallback(async (selectHomeId = null) => {
+    try {
+      const res = await api.get('/funeral-homes');
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setAdminDb(prev => ({
+          ...prev,
+          homes: res.data
+        }));
+        if (selectHomeId) {
+          setSelectedHomeId(selectHomeId);
+        } else {
+          setSelectedHomeId(prev => {
+            const stillExists = res.data.some(h => (h._id === prev || h.id === prev));
+            return stillExists ? prev : (res.data[0]._id || res.data[0].id || '');
+          });
         }
-      })
-      .catch(err => {
-        console.warn('Initial funeral homes load failed:', err);
-      });
-    return () => { mounted = false; };
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Refreshing funeral homes failed:', err);
+    }
+    return [];
   }, []);
+
+  // Initial load of funeral homes
+  useEffect(() => {
+    refreshHomes();
+  }, [refreshHomes]);
 
   // Live services from MongoDB Atlas for selected funeral home
   const [serviceItems, setServiceItems] = useState([]);
@@ -162,28 +173,30 @@ export function AdminDataProvider({ children }) {
     api.get(`/catalog/location/${selectedHomeId}?type=CASKET`)
       .then(res => {
         if (mounted && Array.isArray(res.data)) {
-          const backendCaskets = res.data.map(item => ({
-            id: item._id || item.id,
-            _id: item._id || item.id,
-            name: item.name,
-            price: (item.listPrice !== null && item.listPrice !== undefined) ? Number(item.listPrice) : null,
-            listPrice: (item.listPrice !== null && item.listPrice !== undefined) ? Number(item.listPrice) : null,
-            isActive: Boolean(item.isActive && (item.listPrice > 0)),
-            description: item.specifications || '',
-            specifications: item.specifications || '',
-            image: item.imageUrl || '',
-            imageUrl: item.imageUrl || '',
-            home: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-            assignedFuneralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-            funeralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-            assignedPackages: Array.isArray(item.assignedPackages) ? item.assignedPackages : [],
-            isMandatory: Boolean(item.isMandatory),
-            isFixedPrice: Boolean(item.isFixedPrice),
-            type: item.type || 'Guaranteed',
-            category: item.category || item.type || 'Guaranteed',
-            assignment: activeHome?.name || item.assignment || 'Specific Location',
-            taxable: true
-          }));
+          const backendCaskets = res.data
+            .filter(item => item.listPrice !== null && item.listPrice !== undefined && Number(item.listPrice) > 0)
+            .map(item => ({
+              id: item._id || item.id,
+              _id: item._id || item.id,
+              name: item.name,
+              price: Number(item.listPrice),
+              listPrice: Number(item.listPrice),
+              isActive: Boolean(item.isActive && Number(item.listPrice) > 0),
+              description: item.specifications || '',
+              specifications: item.specifications || '',
+              image: item.imageUrl || '',
+              imageUrl: item.imageUrl || '',
+              home: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+              assignedFuneralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+              funeralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+              assignedPackages: Array.isArray(item.assignedPackages) ? item.assignedPackages : [],
+              isMandatory: Boolean(item.isMandatory),
+              isFixedPrice: Boolean(item.isFixedPrice),
+              type: item.type || 'Guaranteed',
+              category: item.category || item.type || 'Guaranteed',
+              assignment: activeHome?.name || item.assignment || 'Specific Location',
+              taxable: true
+            }));
           setAdminDb(prev => ({ ...prev, caskets: backendCaskets }));
         }
       })
@@ -193,30 +206,36 @@ export function AdminDataProvider({ children }) {
     api.get(`/catalog/location/${selectedHomeId}?type=ADDON`)
       .then(res => {
         if (mounted && Array.isArray(res.data)) {
-          const backendAddons = res.data.map(item => ({
-            id: item._id || item.id,
-            _id: item._id || item.id,
-            name: item.name,
-            price: (item.listPrice !== null && item.listPrice !== undefined) ? Number(item.listPrice) : null,
-            listPrice: (item.listPrice !== null && item.listPrice !== undefined) ? Number(item.listPrice) : null,
-            isActive: Boolean(
-              item.isActive && ((item.listPrice !== null && Number(item.listPrice) > 0) || (item.hasDestinations && item.destinations?.length > 0))
-            ),
-            description: item.specifications || '',
-            specifications: item.specifications || '',
-            home: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-            assignedFuneralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-            funeralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-            assignedPackages: Array.isArray(item.assignedPackages) ? item.assignedPackages : [],
-            isMandatory: Boolean(item.isMandatory),
-            isFixedPrice: Boolean(item.isFixedPrice),
-            hasDestinations: Boolean(item.hasDestinations),
-            destinations: Array.isArray(item.destinations) ? item.destinations : [],
-            type: item.type || 'Non-Guaranteed',
-            category: item.category || item.type || 'Non-Guaranteed',
-            assignment: activeHome?.name || item.assignment || 'Specific Location',
-            taxable: false
-          }));
+          const backendAddons = res.data
+            .filter(item => {
+              const hasDest = Boolean(item.hasDestinations && Array.isArray(item.destinations) && item.destinations.length > 0);
+              const hasPrice = item.listPrice !== null && item.listPrice !== undefined && Number(item.listPrice) > 0;
+              return hasPrice || hasDest;
+            })
+            .map(item => ({
+              id: item._id || item.id,
+              _id: item._id || item.id,
+              name: item.name,
+              price: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : null,
+              listPrice: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : null,
+              isActive: Boolean(
+                item.isActive && ((item.listPrice !== null && Number(item.listPrice) > 0) || (item.hasDestinations && item.destinations?.length > 0))
+              ),
+              description: item.specifications || '',
+              specifications: item.specifications || '',
+              home: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+              assignedFuneralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+              funeralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+              assignedPackages: Array.isArray(item.assignedPackages) ? item.assignedPackages : [],
+              isMandatory: Boolean(item.isMandatory),
+              isFixedPrice: Boolean(item.isFixedPrice),
+              hasDestinations: Boolean(item.hasDestinations),
+              destinations: Array.isArray(item.destinations) ? item.destinations : [],
+              type: item.type || 'Non-Guaranteed',
+              category: item.category || item.type || 'Non-Guaranteed',
+              assignment: activeHome?.name || item.assignment || 'Specific Location',
+              taxable: false
+            }));
           setAdminDb(prev => ({ ...prev, addons: backendAddons }));
         }
       })
@@ -228,14 +247,14 @@ export function AdminDataProvider({ children }) {
   // Ensure selectedHomeId stays valid if homes list updates
   useEffect(() => {
     if (adminDb?.homes?.length > 0) {
-      const exists = adminDb.homes.some(h => h.id === selectedHomeId);
+      const exists = adminDb.homes.some(h => (h._id === selectedHomeId || h.id === selectedHomeId));
       if (!exists) {
-        setSelectedHomeId(adminDb.homes[0].id);
+        setSelectedHomeId(adminDb.homes[0]._id || adminDb.homes[0].id || '');
       }
     }
   }, [adminDb, selectedHomeId]);
 
-  const activeHome = adminDb?.homes?.find(h => h.id === selectedHomeId) || adminDb?.homes?.[0] || null;
+  const activeHome = adminDb?.homes?.find(h => (h._id === selectedHomeId || h.id === selectedHomeId)) || adminDb?.homes?.[0] || null;
 
   /* =========================================================================
      FUNERAL HOMES HANDLERS
@@ -952,6 +971,7 @@ export function AdminDataProvider({ children }) {
         isLoadingServices,
 
         // Homes
+        refreshHomes,
         handleAddHome,
         handleUpdateHome,
         handleDeleteHome,
