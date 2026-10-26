@@ -77,23 +77,33 @@ export async function authenticateAdmin(credentials = {}) {
 export async function verifyAdminSession(tokenToCheck = null) {
   try {
     let session = null;
-    const raw = localStorage.getItem(ADMIN_AUTH_KEY);
+    const raw = localStorage.getItem(ADMIN_AUTH_KEY) || localStorage.getItem('memorial_admin_auth');
     if (raw) {
-      session = JSON.parse(raw);
+      try {
+        session = JSON.parse(raw);
+      } catch {
+        session = { token: raw };
+      }
     }
 
-    const token = tokenToCheck || session?.token;
-    if (!token) {
+    const token = tokenToCheck || session?.token || (typeof session === 'string' ? session : null);
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
       return { valid: false, admin: null };
     }
 
-    // Verify token prefix and expiration
-    const isValidToken = typeof token === 'string' && token.startsWith('admin_jwt_');
+    // Verify token expiration
     const isNotExpired = !session?.expiresAt || new Date(session.expiresAt) > new Date();
 
-    if (isValidToken && isNotExpired) {
-      return { valid: true, admin: session };
+    if (isNotExpired) {
+      const adminData = session && typeof session === 'object' ? session : { token };
+      return { valid: true, admin: adminData };
     }
+
+    // If expired, clean up invalid tokens
+    try {
+      localStorage.removeItem(ADMIN_AUTH_KEY);
+      localStorage.removeItem('memorial_admin_auth');
+    } catch {}
 
     return { valid: false, admin: null };
   } catch (error) {
@@ -122,10 +132,34 @@ export async function logoutAdmin() {
  */
 export function getStoredAdminToken() {
   try {
-    const raw = localStorage.getItem(ADMIN_AUTH_KEY);
+    const raw = localStorage.getItem(ADMIN_AUTH_KEY) || localStorage.getItem('memorial_admin_auth');
     if (raw) {
-      const session = JSON.parse(raw);
-      return session?.token || null;
+      try {
+        const session = JSON.parse(raw);
+        return session?.token || (typeof session === 'string' ? session : null);
+      } catch {
+        return raw;
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Helper to get the stored admin session object
+ */
+export function getStoredAdminSession() {
+  try {
+    const raw = localStorage.getItem(ADMIN_AUTH_KEY) || localStorage.getItem('memorial_admin_auth');
+    if (raw) {
+      try {
+        const session = JSON.parse(raw);
+        return session && typeof session === 'object' ? session : null;
+      } catch {
+        return null;
+      }
     }
   } catch {
     return null;

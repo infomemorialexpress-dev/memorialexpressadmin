@@ -3,7 +3,8 @@ import {
   authenticateAdmin,
   verifyAdminSession,
   logoutAdmin,
-  getStoredAdminToken
+  getStoredAdminToken,
+  getStoredAdminSession
 } from '../services/admin/adminService.js';
 import { formatErrorMessage } from '../services/base/apiClient.js';
 
@@ -11,7 +12,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => getStoredAdminToken());
-  const [adminUser, setAdminUser] = useState(null);
+  const [adminUser, setAdminUser] = useState(() => getStoredAdminSession());
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(getStoredAdminToken()));
   const [isLoading, setIsLoading] = useState(true);
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useAdminUI } from '../../context/AdminUIContext.jsx';
@@ -7,9 +7,16 @@ import Button from '../../components/common/Button.jsx';
 import { BrandFeatherIcon } from '../../components/common/AdminHeader.jsx';
 
 export default function AdminLoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const { lang, addToast } = useAdminUI();
   const navigate = useNavigate();
+
+  // If already authenticated, redirect immediately to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
