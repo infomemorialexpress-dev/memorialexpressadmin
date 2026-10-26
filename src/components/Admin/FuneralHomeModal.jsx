@@ -220,12 +220,50 @@ export default function FuneralHomeModal({
 
     setIsSubmitting(true);
     try {
-      // Affiliated chapels list
-      const chapelsToSave = formData.locations.map(loc => ({
-        city: loc.city.trim(),
+      // 1. If user selected a PDF file but didn't click "Upload & Attach", automatically upload it now
+      let updatedForms = [...(formData.customForms || [])];
+      if (selectedPdfFile) {
+        try {
+          const uploadData = new FormData();
+          uploadData.append('file', selectedPdfFile);
+
+          const res = await api.post('/funeral-homes/upload', uploadData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+
+          const returnedUrl = res.data?.fileUrl || res.data?.url;
+          if (returnedUrl) {
+            const origin = (api.defaults.baseURL || '').replace(/\/api\/?$/, '');
+            const fullUrl = returnedUrl.startsWith('http') ? returnedUrl : `${origin}${returnedUrl}`;
+            const titleToUse = newFormTitle.trim() || selectedPdfFile.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
+            updatedForms.push({
+              formTitle: titleToUse,
+              fileUrl: fullUrl
+            });
+            setSelectedPdfFile(null);
+            setNewFormTitle('');
+          }
+        } catch (uploadErr) {
+          console.warn('Auto-upload PDF during submit warning:', uploadErr);
+        }
+      }
+
+      // 2. Affiliated chapels list
+      const chapelsToSave = (formData.locations || []).map(loc => ({
+        city: (loc.city || '').trim(),
         zip: loc.zip?.trim() || '',
+        county: loc.county?.trim() || formData.county?.trim() || 'California',
+        kind: loc.kind || 'chapel',
         surcharge: Math.max(0, Number(loc.surcharge) || 0)
       }));
+
+      // 3. Clean custom forms list
+      const customFormsToSave = updatedForms
+        .filter(f => f && (f.fileUrl || f.url) && (f.formTitle || f.title || f.name))
+        .map(f => ({
+          formTitle: String(f.formTitle || f.title || f.name || '').trim(),
+          fileUrl: String(f.fileUrl || f.url || '').trim()
+        }));
 
       const payload = {
         name: formData.name.trim(),
@@ -239,7 +277,7 @@ export default function FuneralHomeModal({
         noteColor: formData.noteColor || '#008000',
         program: formData.customNote?.trim() || '',
         chapels: chapelsToSave,
-        customForms: formData.customForms || []
+        customForms: customFormsToSave
       };
 
       const targetId = initialData?._id || initialData?.id;
