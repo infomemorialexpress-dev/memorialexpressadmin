@@ -7,6 +7,7 @@ import PackagePricingTable from '../../components/Admin/PackagePricingTable.jsx'
 import AddItemModal from '../../components/Admin/AddItemModal.jsx';
 import AddServicePackageModal from '../../components/Admin/AddServicePackageModal.jsx';
 import EditItemModal from '../../components/Admin/EditItemModal.jsx';
+import ConfirmDeleteModal from '../../components/common/ConfirmDeleteModal.jsx';
 import { formatMoney } from '../../utils/quoteLogic.js';
 
 export default function PricingManagementPage() {
@@ -44,6 +45,8 @@ export default function PricingManagementPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editingItemType, setEditingItemType] = useState('casket');
+  const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'casket' | 'addon' | 'package', id, name }
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const homes = adminDb?.homes || [];
   const currentHomeId = selectedHomeId || homes[0]?._id || homes[0]?.id || '';
@@ -69,6 +72,23 @@ export default function PricingManagementPage() {
     setEditingItem(item);
     setEditingItemType(type);
     setIsEditModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      if (deleteTarget.type === 'casket') {
+        await handleDeleteCasket(deleteTarget.id);
+      } else if (deleteTarget.type === 'addon') {
+        await handleDeleteAddon(deleteTarget.id);
+      } else if (deleteTarget.type === 'package') {
+        await handleDeleteServicePackage(currentHomeId, deleteTarget.id);
+      }
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
+    }
   };
 
   return (
@@ -334,12 +354,8 @@ export default function PricingManagementPage() {
                             <button
                               type="button"
                               className="delete-icon-btn"
-                              onClick={() => {
-                                if (window.confirm(lang === 'es' ? `¿Eliminar ataúd "${casket.name}"?` : `Delete casket "${casket.name}"?`)) {
-                                  handleDeleteCasket(casket.id);
-                                }
-                              }}
-                              title={lang === 'es' ? 'Eliminar ataúd' : 'Delete casket from catalog'}
+                              onClick={() => setDeleteTarget({ type: 'casket', id: casket.id, name: casket.name })}
+                              title={lang === 'es' ? 'Eliminar ataúd' : 'Delete casket'}
                             >
                               🗑️
                             </button>
@@ -381,7 +397,9 @@ export default function PricingManagementPage() {
                 setEditingPackage(pkg);
                 setIsAddPackageModalOpen(true);
               }}
-              onDeletePackage={(packageId) => handleDeleteServicePackage(currentHomeId, packageId)}
+              onDeletePackage={(packageId, packageName) => {
+                setDeleteTarget({ type: 'package', id: packageId, name: packageName });
+              }}
               lang={lang}
             />
           </div>
@@ -545,12 +563,8 @@ export default function PricingManagementPage() {
                             <button
                               type="button"
                               className="delete-icon-btn"
-                              onClick={() => {
-                                if (window.confirm(lang === 'es' ? `¿Eliminar adicional "${addon.name}"?` : `Delete add-on "${addon.name}"?`)) {
-                                  handleDeleteAddon(addon.id);
-                                }
-                              }}
-                              title={lang === 'es' ? 'Eliminar adicional' : 'Delete add-on from catalog'}
+                              onClick={() => setDeleteTarget({ type: 'addon', id: addon.id, name: addon.name })}
+                              title={lang === 'es' ? 'Eliminar adicional' : 'Delete add-on'}
                             >
                               🗑️
                             </button>
@@ -617,6 +631,23 @@ export default function PricingManagementPage() {
         itemType={editingItemType}
         homes={homes}
         serviceItems={serviceItems}
+        lang={lang}
+      />
+
+      {/* 7. MODAL: CONFIRM DELETION POPUP */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        itemName={deleteTarget?.name}
+        title={
+          deleteTarget?.type === 'casket'
+            ? (lang === 'es' ? '¿Eliminar Ataúd?' : 'Delete Casket?')
+            : deleteTarget?.type === 'package'
+            ? (lang === 'es' ? '¿Eliminar Paquete de Servicio?' : 'Delete Service Package?')
+            : (lang === 'es' ? '¿Eliminar Servicio Adicional?' : 'Delete Add-on Item?')
+        }
+        isDeleting={isDeleting}
         lang={lang}
       />
     </div>

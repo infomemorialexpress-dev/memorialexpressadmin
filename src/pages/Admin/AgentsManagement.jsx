@@ -3,6 +3,7 @@ import { useAdminData } from '../../context/AdminDataContext.jsx';
 import { useAdminUI } from '../../context/AdminUIContext.jsx';
 import Button from '../../components/common/Button.jsx';
 import AgentModal from '../../components/Admin/AgentModal.jsx';
+import ConfirmDeleteModal from '../../components/common/ConfirmDeleteModal.jsx';
 import api from '../../services/api.js';
 
 export default function AgentsManagement() {
@@ -20,6 +21,8 @@ export default function AgentsManagement() {
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'verified' | 'pending' | 'suspended'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState(null);
+  const [deletingAgent, setDeletingAgent] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [backendHomes, setBackendHomes] = useState([]);
 
   // Fetch live funeral homes from backend for the assignment dropdown
@@ -98,14 +101,18 @@ export default function AgentsManagement() {
     }
   };
 
-  const handleDelete = async (agent) => {
-    const agentName = agent.fullName || agent.name || 'Sales Agent';
-    const confirmMsg = lang === 'es'
-      ? `¿Está seguro de eliminar al agente "${agentName}"?`
-      : `Are you sure you want to remove agent "${agentName}"?`;
+  const handleDelete = (agent) => {
+    setDeletingAgent(agent);
+  };
 
-    if (window.confirm(confirmMsg)) {
-      await handleDeleteAgent(agent.id || agent._id);
+  const handleConfirmDelete = async () => {
+    if (!deletingAgent) return;
+    setIsDeleting(true);
+    try {
+      await handleDeleteAgent(deletingAgent.id || deletingAgent._id);
+      setDeletingAgent(null);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -364,6 +371,17 @@ export default function AgentsManagement() {
         initialData={editingAgent}
         funeralHomes={funeralHomes}
         lang={lang}
+      />
+
+      {/* Modern Centered Delete Confirmation Popup */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(deletingAgent)}
+        itemName={deletingAgent?.fullName || deletingAgent?.name || 'Sales Agent'}
+        itemType={lang === 'es' ? 'agente' : 'agent'}
+        lang={lang}
+        isLoading={isDeleting}
+        onCancel={() => setDeletingAgent(null)}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );

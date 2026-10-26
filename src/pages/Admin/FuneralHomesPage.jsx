@@ -4,6 +4,7 @@ import { useAdminData } from '../../context/AdminDataContext.jsx';
 import Button from '../../components/common/Button.jsx';
 import InputField from '../../components/common/InputField.jsx';
 import FuneralHomeModal from '../../components/Admin/FuneralHomeModal.jsx';
+import ConfirmDeleteModal from '../../components/common/ConfirmDeleteModal.jsx';
 import api from '../../services/api.js';
 import { FuneralHomeAdminCardSkeleton } from '../../components/common/SkeletonLoader.jsx';
 import ShimmerImage from '../../components/common/ShimmerImage.jsx';
@@ -19,6 +20,8 @@ export default function FuneralHomesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHome, setEditingHome] = useState(null);
+  const [deletingHome, setDeletingHome] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch list of funeral homes from NestJS Backend: GET /funeral-homes
   const fetchHomes = useCallback(async () => {
@@ -117,34 +120,32 @@ export default function FuneralHomesPage() {
   };
 
   // Delete funeral home via API: DELETE /funeral-homes/:id
-  const handleDelete = async (home) => {
-    const homeId = home._id || home.id;
-    const confirmMsg =
-      lang === 'es'
-        ? `¿Está seguro de eliminar la funeraria "${home.name}"? Esta acción no se puede deshacer.`
-        : `Are you sure you want to delete funeral home "${home.name}"? This action cannot be undone.`;
-
-    if (window.confirm(confirmMsg)) {
-      try {
-        await api.delete(`/funeral-homes/${homeId}`);
-        setHomes((prev) => prev.filter((h) => h._id !== homeId && h.id !== homeId));
-        refreshHomes?.();
-        addToast?.(
-          lang === 'es'
-            ? `Funeraria "${home.name}" eliminada exitosamente.`
-            : `Funeral home "${home.name}" deleted successfully.`,
-          'info'
-        );
-      } catch (err) {
-        console.error('Error deleting funeral home:', err);
-        addToast?.(
-          err.userMessage ||
-            (lang === 'es'
-              ? 'Error al eliminar la funeraria del servidor.'
-              : 'Error deleting funeral home from server.'),
-          'error'
-        );
-      }
+  const handleConfirmDelete = async () => {
+    if (!deletingHome) return;
+    const homeId = deletingHome._id || deletingHome.id;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/funeral-homes/${homeId}`);
+      setHomes((prev) => prev.filter((h) => h._id !== homeId && h.id !== homeId));
+      refreshHomes?.();
+      addToast?.(
+        lang === 'es'
+          ? `Funeraria "${deletingHome.name}" eliminada exitosamente.`
+          : `Funeral home "${deletingHome.name}" deleted successfully.`,
+        'success'
+      );
+    } catch (err) {
+      console.error('Error deleting funeral home:', err);
+      addToast?.(
+        err.userMessage ||
+          (lang === 'es'
+            ? 'Error al eliminar la funeraria del servidor.'
+            : 'Error deleting funeral home from server.'),
+        'error'
+      );
+    } finally {
+      setIsDeleting(false);
+      setDeletingHome(null);
     }
   };
 
@@ -365,7 +366,7 @@ export default function FuneralHomesPage() {
                   <button
                     type="button"
                     className="delete-icon-btn"
-                    onClick={() => handleDelete(home)}
+                    onClick={() => setDeletingHome(home)}
                     title={lang === 'es' ? 'Eliminar funeraria' : 'Delete location'}
                     aria-label="Delete location"
                   >
@@ -384,6 +385,17 @@ export default function FuneralHomesPage() {
         onClose={handleCloseModal}
         onSave={handleSaveHome}
         initialData={editingHome}
+        lang={lang}
+      />
+
+      {/* Confirm Delete Popup */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(deletingHome)}
+        onClose={() => setDeletingHome(null)}
+        onConfirm={handleConfirmDelete}
+        itemName={deletingHome?.name}
+        title={lang === 'es' ? '¿Eliminar Funeraria?' : 'Delete Funeral Home?'}
+        isDeleting={isDeleting}
         lang={lang}
       />
     </div>

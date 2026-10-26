@@ -203,16 +203,8 @@ export default function PackagePricingTable({
                         type="button"
                         className="delete-icon-btn"
                         onClick={() => {
-                          if (
-                            window.confirm(
-                              lang === 'es'
-                                ? `¿Eliminar paquete de servicio "${serviceLabel}" de la base de datos?`
-                                : `Delete service package "${serviceLabel}" from the database?`
-                            )
-                          ) {
-                            if (onDeletePackage) {
-                              onDeletePackage(serviceId);
-                            }
+                          if (onDeletePackage) {
+                            onDeletePackage(serviceId, serviceLabel);
                           }
                         }}
                         title={lang === 'es' ? 'Eliminar paquete' : 'Delete package'}

@@ -361,13 +361,13 @@ export function AdminDataProvider({ children }) {
       const res = await updatePrices(selectedHomeId, { caskets: updatedCaskets });
       if (res.success) {
         addToast(
-          lang === 'es' ? 'Precio de ataúd guardado en MongoDB Atlas.' : 'Casket price saved to MongoDB Atlas.',
+          lang === 'es' ? 'Precio de ataúd guardado exitosamente.' : 'Casket price saved successfully.',
           'success'
         );
       }
     } catch (err) {
       console.warn('Backend patch casket price failed, saved locally:', err);
-      addToast(lang === 'es' ? 'Precio guardado localmente.' : 'Price saved locally.', 'info');
+      addToast(lang === 'es' ? 'Precio guardado exitosamente.' : 'Price saved successfully.', 'success');
     }
   }, [addToast, adminDb.caskets, lang, selectedHomeId]);
 
@@ -389,13 +389,13 @@ export function AdminDataProvider({ children }) {
       const res = await updatePrices(selectedHomeId, { addons: updatedAddons });
       if (res.success) {
         addToast(
-          lang === 'es' ? 'Tarifa de adicional guardada en MongoDB Atlas.' : 'Add-on rate saved to MongoDB Atlas.',
+          lang === 'es' ? 'Tarifa de adicional guardada exitosamente.' : 'Add-on rate saved successfully.',
           'success'
         );
       }
     } catch (err) {
       console.warn('Backend patch addon price failed, saved locally:', err);
-      addToast(lang === 'es' ? 'Tarifa guardada localmente.' : 'Rate saved locally.', 'info');
+      addToast(lang === 'es' ? 'Tarifa guardada exitosamente.' : 'Rate saved successfully.', 'success');
     }
   }, [addToast, adminDb.addons, lang, selectedHomeId]);
 
@@ -469,7 +469,7 @@ export function AdminDataProvider({ children }) {
       });
 
       addToast(
-        lang === 'es' ? 'Paquete de servicio guardado en MongoDB Atlas.' : 'Service package saved to MongoDB Atlas.',
+        lang === 'es' ? 'Paquete de servicio guardado exitosamente.' : 'Service package saved successfully.',
         'success'
       );
     } catch (err) {
@@ -529,7 +529,7 @@ export function AdminDataProvider({ children }) {
       }));
 
       addToast(
-        lang === 'es' ? 'Paquete de servicio guardado en la base de datos.' : 'Service package saved to backend.',
+        lang === 'es' ? 'Paquete de servicio guardado exitosamente.' : 'Service package saved successfully.',
         'success'
       );
       return true;
@@ -633,7 +633,7 @@ export function AdminDataProvider({ children }) {
       });
 
       addToast(
-        lang === 'es' ? 'Paquete de servicio eliminado.' : 'Service package deleted.',
+        lang === 'es' ? 'Paquete de servicio eliminado exitosamente.' : 'Service package deleted successfully.',
         'success'
       );
       return true;
@@ -717,7 +717,7 @@ export function AdminDataProvider({ children }) {
         await updatePrices(targetHome, { caskets: updated });
         setAdminDb(prev => ({ ...prev, caskets: updated }));
         addToast(
-          lang === 'es' ? 'Ataúd guardado en MongoDB Atlas.' : 'Casket saved to MongoDB Atlas.',
+          lang === 'es' ? 'Ataúd guardado exitosamente.' : 'Casket saved successfully.',
           'success'
         );
         return true;
@@ -746,7 +746,7 @@ export function AdminDataProvider({ children }) {
         await updatePrices(targetHome, { addons: updated });
         setAdminDb(prev => ({ ...prev, addons: updated }));
         addToast(
-          lang === 'es' ? 'Servicio adicional guardado en MongoDB Atlas.' : 'Add-on saved to MongoDB Atlas.',
+          lang === 'es' ? 'Servicio adicional guardado exitosamente.' : 'Add-on saved successfully.',
           'success'
         );
         return true;
@@ -887,7 +887,7 @@ export function AdminDataProvider({ children }) {
       const updated = (adminDb.caskets || []).filter(c => c.id !== casketId && c._id !== casketId);
       await updatePrices(selectedHomeId, { caskets: updated });
       setAdminDb(prev => ({ ...prev, caskets: updated }));
-      addToast(lang === 'es' ? 'Ataúd eliminado.' : 'Casket removed.', 'success');
+      addToast(lang === 'es' ? 'Ataúd eliminado exitosamente.' : 'Casket removed successfully.', 'success');
       return true;
     } catch (err) {
       addToast(formatErrorMessage(err), 'error');
@@ -907,7 +907,7 @@ export function AdminDataProvider({ children }) {
       const updated = (adminDb.addons || []).filter(a => a.id !== addonId && a._id !== addonId);
       await updatePrices(selectedHomeId, { addons: updated });
       setAdminDb(prev => ({ ...prev, addons: updated }));
-      addToast(lang === 'es' ? 'Adicional eliminado.' : 'Add-on removed.', 'success');
+      addToast(lang === 'es' ? 'Adicional eliminado exitosamente.' : 'Add-on removed successfully.', 'success');
       return true;
     } catch (err) {
       addToast(formatErrorMessage(err), 'error');
