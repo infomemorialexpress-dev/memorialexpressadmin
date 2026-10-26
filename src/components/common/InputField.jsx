@@ -18,8 +18,39 @@ export default function InputField({
   className = '',
   autoFocus = false,
   style = {},
-  rightElement = null
+  rightElement = null,
+  onWheel,
+  onKeyDown
 }) {
+  const isNumberType = type === 'number';
+  const effectiveMin = isNumberType ? (min !== undefined ? min : '0') : min;
+
+  const handleKeyDown = (e) => {
+    if (isNumberType) {
+      if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+      }
+    }
+    if (onKeyDown) onKeyDown(e);
+  };
+
+  const handleWheel = (e) => {
+    if (isNumberType) {
+      e.target.blur();
+    }
+    if (onWheel) onWheel(e);
+  };
+
+  const handleChange = (e) => {
+    if (isNumberType) {
+      const val = e.target.value;
+      if (val !== '' && Number(val) < 0) {
+        e.target.value = '0';
+      }
+    }
+    if (onChange) onChange(e);
+  };
+
   return (
     <div className={`form-group ${className}`} style={style}>
       {label && (
@@ -33,10 +64,12 @@ export default function InputField({
           name={name}
           type={type}
           value={value}
-          onChange={onChange}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onWheel={handleWheel}
           placeholder={placeholder}
           disabled={disabled}
-          min={min}
+          min={effectiveMin}
           max={max}
           step={step}
           autoFocus={autoFocus}

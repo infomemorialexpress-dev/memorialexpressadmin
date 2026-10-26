@@ -443,8 +443,15 @@ export default function AddItemModal({
                             <span style={{ fontSize: 13, color: '#64748b' }}>$</span>
                             <input
                               type="number"
+                              min="0"
                               placeholder="0"
                               value={dest.defaultPrice}
+                              onWheel={(e) => e.target.blur()}
+                              onKeyDown={(e) => {
+                                if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                                  e.preventDefault();
+                                }
+                              }}
                               onChange={(e) => handleDestinationChange(idx, 'defaultPrice', e.target.value)}
                               style={{ width: '100%', padding: '7px 9px', fontSize: 13, borderRadius: 6, border: '1px solid #cbd5e1' }}
                             />

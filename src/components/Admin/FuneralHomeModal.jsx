@@ -607,7 +607,16 @@ export default function FuneralHomeModal({
                 placeholder={lang === 'es' ? 'Recargo $' : 'Surcharge $'}
                 className="form-input sub-input surcharge-input"
                 value={chapelSurcharge || ''}
-                onChange={(e) => setChapelSurcharge(e.target.value)}
+                onWheel={(e) => e.target.blur()}
+                onKeyDown={(e) => {
+                  if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                  }
+                }}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0);
+                  setChapelSurcharge(val);
+                }}
                 min="0"
                 step="50"
               />

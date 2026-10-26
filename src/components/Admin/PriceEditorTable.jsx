@@ -36,10 +36,21 @@ export default function PriceEditorTable({
                   <td>
                     <input
                       type="number"
+                      min="0"
                       step="1"
                       className="admin-table-input"
                       defaultValue={c.price}
-                      onBlur={(e) => onCasketPriceChange(c.id, e.target.value)}
+                      onWheel={(e) => e.target.blur()}
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const val = Math.max(0, parseFloat(e.target.value) || 0);
+                        e.target.value = val;
+                        onCasketPriceChange(c.id, val);
+                      }}
                     />
                   </td>
                   <td>
@@ -82,10 +93,21 @@ export default function PriceEditorTable({
                 <td>
                   <input
                     type="number"
+                    min="0"
                     step="1"
                     className="admin-table-input"
                     defaultValue={a.price}
-                    onBlur={(e) => onAddonPriceChange(a.id, e.target.value)}
+                    onWheel={(e) => e.target.blur()}
+                    onKeyDown={(e) => {
+                      if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                        e.preventDefault();
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const val = Math.max(0, parseFloat(e.target.value) || 0);
+                      e.target.value = val;
+                      onAddonPriceChange(a.id, val);
+                    }}
                   />
                 </td>
                 <td>

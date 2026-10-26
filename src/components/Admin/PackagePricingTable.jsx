@@ -165,11 +165,22 @@ export default function PackagePricingTable({
                       <span className="currency-symbol">$</span>
                       <input
                         type="number"
+                        min="0"
                         step="1"
                         className="admin-table-input"
                         defaultValue={s1}
                         key={`${packageKey}_s1_${s1}`}
-                        onBlur={(e) => onPackageChange(homeId, serviceId, 'section1', e.target.value)}
+                        onWheel={(e) => e.target.blur()}
+                        onKeyDown={(e) => {
+                          if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                            e.preventDefault();
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const val = Math.max(0, parseFloat(e.target.value) || 0);
+                          e.target.value = val;
+                          onPackageChange(homeId, serviceId, 'section1', val);
+                        }}
                       />
                     </div>
                   </td>
@@ -178,11 +189,22 @@ export default function PackagePricingTable({
                       <span className="currency-symbol">$</span>
                       <input
                         type="number"
+                        min="0"
                         step="1"
                         className="admin-table-input"
                         defaultValue={s2}
                         key={`${packageKey}_s2_${s2}`}
-                        onBlur={(e) => onPackageChange(homeId, serviceId, 'section2', e.target.value)}
+                        onWheel={(e) => e.target.blur()}
+                        onKeyDown={(e) => {
+                          if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                            e.preventDefault();
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const val = Math.max(0, parseFloat(e.target.value) || 0);
+                          e.target.value = val;
+                          onPackageChange(homeId, serviceId, 'section2', val);
+                        }}
                       />
                     </div>
                   </td>

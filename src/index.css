@@ -4061,6 +4061,17 @@ p.page-subtitle {
   z-index: 99999;
 }
 
+/* Disable mouse spin buttons and mouse slide behavior on number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 
 
 

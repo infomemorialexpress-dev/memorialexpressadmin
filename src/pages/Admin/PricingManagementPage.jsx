@@ -36,7 +36,6 @@ export default function PricingManagementPage() {
   }, [refreshHomes]);
 
   const [activeTab, setActiveTab] = useState('caskets'); // 'caskets' | 'services' | 'addons'
-  const [filterQuery, setFilterQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAddPackageModalOpen, setIsAddPackageModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -50,19 +49,17 @@ export default function PricingManagementPage() {
   const visibleCaskets = (adminDb.caskets || []).filter((c) => {
     const itemHome = c.funeralHomeId || c.assignedFuneralHomeId || c.home;
     const matchesHome = String(itemHome) === String(currentHomeId);
-    const matchesQuery = !filterQuery || c.name?.toLowerCase().includes(filterQuery.toLowerCase());
     const hasValidPrice = c.price !== null && c.price !== undefined && Number(c.price) > 0;
-    return matchesHome && matchesQuery && hasValidPrice;
+    return matchesHome && hasValidPrice;
   });
 
   // Filter addons exclusively for this location that actually exist with valid price or destinations
   const visibleAddons = (adminDb.addons || []).filter((a) => {
     const itemHome = a.funeralHomeId || a.assignedFuneralHomeId || a.home;
     const matchesHome = String(itemHome) === String(currentHomeId);
-    const matchesQuery = !filterQuery || a.name?.toLowerCase().includes(filterQuery.toLowerCase());
     const hasDest = Boolean(a.hasDestinations && Array.isArray(a.destinations) && a.destinations.length > 0);
     const hasValidPrice = (a.price !== null && a.price !== undefined && Number(a.price) > 0) || hasDest;
-    return matchesHome && matchesQuery && hasValidPrice;
+    return matchesHome && hasValidPrice;
   });
 
   const handleOpenEditModal = (item, type = 'casket') => {
@@ -150,15 +147,6 @@ export default function PricingManagementPage() {
         </div>
 
         <div className="toolbar-right-actions">
-          {activeTab !== 'services' && (
-            <InputField
-              placeholder={lang === 'es' ? 'Filtrar por nombre...' : 'Filter items by name...'}
-              value={filterQuery}
-              onChange={(e) => setFilterQuery(e.target.value)}
-              style={{ minWidth: 220, margin: 0 }}
-            />
-          )}
-
           <Button
             variant="primary"
             onClick={() => {
