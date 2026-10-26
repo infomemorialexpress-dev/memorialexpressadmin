@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import InputField from '../common/InputField.jsx';
 import SelectDropdown from '../common/SelectDropdown.jsx';
 import Button from '../common/Button.jsx';
@@ -8,6 +8,7 @@ export default function AddServicePackageModal({
   isOpen,
   onClose,
   onSavePackage,
+  editingPackage = null,
   locationName = '',
   locationId = '',
   lang = 'en'
@@ -31,6 +32,63 @@ export default function AddServicePackageModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Pre-fill fields whenever modal opens or editingPackage changes
+  useEffect(() => {
+    if (isOpen) {
+      if (editingPackage) {
+        setPackageName(editingPackage.packageName || editingPackage.name || editingPackage.serviceLabel || '');
+        setCategory(editingPackage.category || 'Traditional');
+
+        const itemized = editingPackage.itemizedServices;
+        if (itemized && Object.keys(itemized).length > 0) {
+          setArrangements(String(itemized.arrangements ?? '0'));
+          setTransfer(String(itemized.transfer ?? '0'));
+          setEmbalming(String(itemized.embalming ?? '0'));
+          setOtherPreparation(String(itemized.otherPreparation ?? '0'));
+          setVisitation(String(itemized.visitation ?? '0'));
+          setFuneralService(String(itemized.funeralService ?? '0'));
+          setFuneralCoach(String(itemized.funeralCoach ?? '0'));
+          setUtilityVehicles(String(itemized.utilityVehicles ?? '0'));
+          setPackageSavings(String(itemized.packageSavings ?? '0'));
+        } else {
+          // If no previous itemized breakdown was stored, place existing section1 price in arrangements
+          const s1 = editingPackage.section1Price !== undefined
+            ? editingPackage.section1Price
+            : (editingPackage.s1 ?? 2050);
+          setArrangements(String(s1));
+          setTransfer('0');
+          setEmbalming('0');
+          setOtherPreparation('0');
+          setVisitation('0');
+          setFuneralService('0');
+          setFuneralCoach('0');
+          setUtilityVehicles('0');
+          setPackageSavings('0');
+        }
+
+        const s2 = editingPackage.section2Price !== undefined
+          ? editingPackage.section2Price
+          : (editingPackage.s2 ?? 0);
+        setSection2Price(String(s2));
+      } else {
+        // Reset to default new package baseline
+        setPackageName('');
+        setCategory('Traditional');
+        setArrangements('2050');
+        setTransfer('695');
+        setEmbalming('525');
+        setOtherPreparation('200');
+        setVisitation('300');
+        setFuneralService('150');
+        setFuneralCoach('375');
+        setUtilityVehicles('100');
+        setPackageSavings('1000');
+        setSection2Price('0');
+      }
+      setError('');
+    }
+  }, [editingPackage, isOpen]);
 
   if (!isOpen) return null;
 
@@ -72,6 +130,7 @@ export default function AddServicePackageModal({
     setIsSubmitting(true);
     try {
       const payload = {
+        packageId: editingPackage ? (editingPackage._id || editingPackage.id || editingPackage.serviceId) : undefined,
         packageName: packageName.trim(),
         category,
         itemizedServices: {
@@ -93,18 +152,6 @@ export default function AddServicePackageModal({
       const success = await onSavePackage(payload);
 
       if (success) {
-        setPackageName('');
-        setCategory('Traditional');
-        setArrangements('2050');
-        setTransfer('695');
-        setEmbalming('525');
-        setOtherPreparation('200');
-        setVisitation('300');
-        setFuneralService('150');
-        setFuneralCoach('375');
-        setUtilityVehicles('100');
-        setPackageSavings('1000');
-        setSection2Price('0');
         onClose();
       }
     } catch (err) {
@@ -125,12 +172,18 @@ export default function AddServicePackageModal({
         <div className="modal-header">
           <div className="modal-title-group">
             <h2 className="modal-title">
-              📋 {lang === 'es' ? 'Agregar Paquete de Servicios Funerarios' : 'Add Funeral Service Package'}
+              {editingPackage
+                ? (lang === 'es' ? '✏️ Editar Paquete de Servicios Funerarios' : '✏️ Edit Funeral Service Package')
+                : (lang === 'es' ? '📋 Agregar Paquete de Servicios Funerarios' : '📋 Add Funeral Service Package')}
             </h2>
             <p className="modal-subtitle">
-              {lang === 'es'
-                ? `Desglose detallado de Sección I para: ${locationName}`
-                : `Itemized Section I Breakdown & Rates for: ${locationName}`}
+              {editingPackage
+                ? (lang === 'es'
+                    ? `Editar desglose y tarifas de Sección I para: ${locationName}`
+                    : `Edit Itemized Section I Breakdown & Rates for: ${locationName}`)
+                : (lang === 'es'
+                    ? `Desglose detallado de Sección I para: ${locationName}`
+                    : `Itemized Section I Breakdown & Rates for: ${locationName}`)}
             </p>
           </div>
           <button
@@ -393,7 +446,9 @@ export default function AddServicePackageModal({
             >
               {isSubmitting
                 ? (lang === 'es' ? 'Guardando...' : 'Saving...')
-                : (lang === 'es' ? 'Guardar Paquete' : 'Save Package')}
+                : editingPackage
+                  ? (lang === 'es' ? 'Guardar Cambios' : 'Save Changes')
+                  : (lang === 'es' ? 'Guardar Paquete' : 'Save Package')}
             </Button>
           </div>
         </form>

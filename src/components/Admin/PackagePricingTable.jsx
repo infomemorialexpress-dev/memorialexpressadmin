@@ -7,6 +7,7 @@ export default function PackagePricingTable({
   serviceItems = [],
   isLoadingServices = false,
   onPackageChange,
+  onEditPackage,
   onDeletePackage,
   lang = 'en'
 }) {
@@ -115,7 +116,7 @@ export default function PackagePricingTable({
             <th style={{ width: 150, textAlign: 'right' }}>
               {lang === 'es' ? 'Tarifa Total Base' : 'Total Package Rate'}
             </th>
-            <th style={{ width: 80, textAlign: 'center' }}>
+            <th style={{ width: 100, textAlign: 'center' }}>
               {lang === 'es' ? 'Acción' : 'Action'}
             </th>
           </tr>
@@ -160,53 +161,11 @@ export default function PackagePricingTable({
                   <td>
                     {getCategoryBadge(category)}
                   </td>
-                  <td>
-                    <div className="table-input-currency">
-                      <span className="currency-symbol">$</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        className="admin-table-input"
-                        defaultValue={s1}
-                        key={`${packageKey}_s1_${s1}`}
-                        onWheel={(e) => e.target.blur()}
-                        onKeyDown={(e) => {
-                          if (e.key === '-' || e.key === 'e' || e.key === 'E') {
-                            e.preventDefault();
-                          }
-                        }}
-                        onBlur={(e) => {
-                          const val = Math.max(0, parseFloat(e.target.value) || 0);
-                          e.target.value = val;
-                          onPackageChange(homeId, serviceId, 'section1', val);
-                        }}
-                      />
-                    </div>
+                  <td style={{ color: '#183655', fontWeight: 600, fontSize: '14.5px' }}>
+                    {formatMoney(s1)}
                   </td>
-                  <td>
-                    <div className="table-input-currency">
-                      <span className="currency-symbol">$</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        className="admin-table-input"
-                        defaultValue={s2}
-                        key={`${packageKey}_s2_${s2}`}
-                        onWheel={(e) => e.target.blur()}
-                        onKeyDown={(e) => {
-                          if (e.key === '-' || e.key === 'e' || e.key === 'E') {
-                            e.preventDefault();
-                          }
-                        }}
-                        onBlur={(e) => {
-                          const val = Math.max(0, parseFloat(e.target.value) || 0);
-                          e.target.value = val;
-                          onPackageChange(homeId, serviceId, 'section2', val);
-                        }}
-                      />
-                    </div>
+                  <td style={{ color: '#183655', fontWeight: 600, fontSize: '14.5px' }}>
+                    {formatMoney(s2)}
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <span className="total-highlight" style={{ fontSize: '15px', fontWeight: 750, color: '#183655' }}>
@@ -214,36 +173,66 @@ export default function PackagePricingTable({
                     </span>
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <button
-                      type="button"
-                      className="delete-icon-btn"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            lang === 'es'
-                              ? `¿Eliminar paquete de servicio "${serviceLabel}" de la base de datos?`
-                              : `Delete service package "${serviceLabel}" from the database?`
-                          )
-                        ) {
-                          if (onDeletePackage) {
-                            onDeletePackage(serviceId);
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+                      <button
+                        type="button"
+                        className="edit-icon-btn"
+                        onClick={() => {
+                          if (onEditPackage) {
+                            onEditPackage(row.rawItem ? { ...row.rawItem, ...row } : row);
                           }
-                        }
-                      }}
-                      title={lang === 'es' ? 'Eliminar paquete' : 'Delete package'}
-                      style={{
-                        background: '#fef2f2',
-                        border: '1px solid #fecaca',
-                        borderRadius: 6,
-                        padding: '4px 8px',
-                        cursor: 'pointer',
-                        fontSize: 13,
-                        color: '#dc2626',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      🗑️
-                    </button>
+                        }}
+                        title={lang === 'es' ? 'Editar paquete' : 'Edit package'}
+                        style={{
+                          background: '#eff6ff',
+                          border: '1px solid #bfdbfe',
+                          borderRadius: 6,
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          color: '#2563eb',
+                          transition: 'all 0.15s ease',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        type="button"
+                        className="delete-icon-btn"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              lang === 'es'
+                                ? `¿Eliminar paquete de servicio "${serviceLabel}" de la base de datos?`
+                                : `Delete service package "${serviceLabel}" from the database?`
+                            )
+                          ) {
+                            if (onDeletePackage) {
+                              onDeletePackage(serviceId);
+                            }
+                          }
+                        }}
+                        title={lang === 'es' ? 'Eliminar paquete' : 'Delete package'}
+                        style={{
+                          background: '#fef2f2',
+                          border: '1px solid #fecaca',
+                          borderRadius: 6,
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          color: '#dc2626',
+                          transition: 'all 0.15s ease',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

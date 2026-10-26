@@ -79,11 +79,27 @@ export function AdminDataProvider({ children }) {
   const [serviceItems, setServiceItems] = useState([]);
   const [isLoadingServices, setIsLoadingServices] = useState(false);
 
+  // Immediately clear all location-specific state arrays (packages, caskets, addons)
+  const clearLocationData = useCallback(() => {
+    setServiceItems([]);
+    setAdminDb(prev => ({
+      ...prev,
+      caskets: [],
+      addons: [],
+      packages: {}
+    }));
+  }, []);
+
   // Load live catalog (services, caskets, addons) for active funeral home from backend API
   useEffect(() => {
     let mounted = true;
-    if (!selectedHomeId) return;
+    if (!selectedHomeId) {
+      clearLocationData();
+      return;
+    }
 
+    // Immediately clear arrays for packages, caskets, and addons before new API fetch
+    clearLocationData();
     setIsLoadingServices(true);
 
     // 1. Fetch live Services & Custom Packages
@@ -121,46 +137,47 @@ export function AdminDataProvider({ children }) {
               category: hp.category || 'Traditional',
               section1Price: hp.section1Price,
               section2Price: hp.section2Price,
+              itemizedServices: hp.itemizedServices,
               isCustom: true,
               funeralHomeId: selectedHomeId
             });
           }
         }
 
-        if (combined.length > 0) {
-          setServiceItems(combined);
-          // Sync live prices into adminDb.packages so PackagePricingTable displays MongoDB values
-          setAdminDb(prev => {
-            const nextPackages = { ...(prev.packages || {}) };
-            for (const item of combined) {
-              const nameLower = (item.name || '').toLowerCase();
-              let svcSlug = '';
-              if (nameLower.includes('two-day') || nameLower.includes('two day') || nameLower.includes('2 day')) svcSlug = 'two_day';
-              else if (nameLower.includes('one-day') || nameLower.includes('one day') || nameLower.includes('1 day')) svcSlug = 'one_day';
-              else if (nameLower.includes('traditional cremation')) svcSlug = 'traditional_cremation';
-              else if (nameLower.includes('memorial cremation')) svcSlug = 'memorial_cremation';
-              else if (nameLower.includes('direct cremation')) svcSlug = 'direct_cremation';
-              else if (nameLower.includes('ship out with') || nameLower.includes('ship traditional')) svcSlug = 'ship_traditional';
-              else if (nameLower.includes('direct ship') || nameLower.includes('ship')) svcSlug = 'ship_direct';
-              else svcSlug = item._id || item.id;
+        setServiceItems(combined);
 
-              const packageKey = `${selectedHomeId}|${svcSlug}`;
-              nextPackages[packageKey] = {
-                section1: item.section1Price !== null && item.section1Price !== undefined ? item.section1Price : (nextPackages[packageKey]?.section1 || 0),
-                section2: item.section2Price !== null && item.section2Price !== undefined ? item.section2Price : (nextPackages[packageKey]?.section2 || 0),
-                verified: true,
-                catalogId: item._id || item.id,
-                name: item.name,
-                category: item.category,
-                isCustom: item.isCustom || false
-              };
-            }
-            return {
-              ...prev,
-              packages: nextPackages
+        // Sync live prices into adminDb.packages so PackagePricingTable displays MongoDB values
+        setAdminDb(prev => {
+          const nextPackages = { ...(prev.packages || {}) };
+          for (const item of combined) {
+            const nameLower = (item.name || '').toLowerCase();
+            let svcSlug = '';
+            if (nameLower.includes('two-day') || nameLower.includes('two day') || nameLower.includes('2 day')) svcSlug = 'two_day';
+            else if (nameLower.includes('one-day') || nameLower.includes('one day') || nameLower.includes('1 day')) svcSlug = 'one_day';
+            else if (nameLower.includes('traditional cremation')) svcSlug = 'traditional_cremation';
+            else if (nameLower.includes('memorial cremation')) svcSlug = 'memorial_cremation';
+            else if (nameLower.includes('direct cremation')) svcSlug = 'direct_cremation';
+            else if (nameLower.includes('ship out with') || nameLower.includes('ship traditional')) svcSlug = 'ship_traditional';
+            else if (nameLower.includes('direct ship') || nameLower.includes('ship')) svcSlug = 'ship_direct';
+            else svcSlug = item._id || item.id;
+
+            const packageKey = `${selectedHomeId}|${svcSlug}`;
+            nextPackages[packageKey] = {
+              section1: item.section1Price !== null && item.section1Price !== undefined ? item.section1Price : (nextPackages[packageKey]?.section1 || 0),
+              section2: item.section2Price !== null && item.section2Price !== undefined ? item.section2Price : (nextPackages[packageKey]?.section2 || 0),
+              verified: true,
+              catalogId: item._id || item.id,
+              name: item.name,
+              category: item.category,
+              itemizedServices: item.itemizedServices,
+              isCustom: item.isCustom || false
             };
-          });
-        }
+          }
+          return {
+            ...prev,
+            packages: nextPackages
+          };
+        });
       })
       .catch(err => {
         console.warn('Live catalog services load failed:', err);
@@ -172,77 +189,79 @@ export function AdminDataProvider({ children }) {
     // 2. Fetch live Caskets
     api.get(`/catalog/location/${selectedHomeId}?type=CASKET`)
       .then(res => {
-        if (mounted && Array.isArray(res.data)) {
-          const backendCaskets = res.data
-            .filter(item => item.listPrice !== null && item.listPrice !== undefined && Number(item.listPrice) > 0)
-            .map(item => ({
-              id: item._id || item.id,
-              _id: item._id || item.id,
-              name: item.name,
-              price: Number(item.listPrice),
-              listPrice: Number(item.listPrice),
-              isActive: Boolean(item.isActive && Number(item.listPrice) > 0),
-              description: item.specifications || '',
-              specifications: item.specifications || '',
-              image: item.imageUrl || '',
-              imageUrl: item.imageUrl || '',
-              home: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-              assignedFuneralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-              funeralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-              assignedPackages: Array.isArray(item.assignedPackages) ? item.assignedPackages : [],
-              isMandatory: Boolean(item.isMandatory),
-              isFixedPrice: Boolean(item.isFixedPrice),
-              type: item.type || 'Guaranteed',
-              category: item.category || item.type || 'Guaranteed',
-              assignment: activeHome?.name || item.assignment || 'Specific Location',
-              taxable: true
-            }));
-          setAdminDb(prev => ({ ...prev, caskets: backendCaskets }));
-        }
+        if (!mounted) return;
+        const backendCaskets = Array.isArray(res.data)
+          ? res.data
+              .filter(item => item.listPrice !== null && item.listPrice !== undefined && Number(item.listPrice) > 0)
+              .map(item => ({
+                id: item._id || item.id,
+                _id: item._id || item.id,
+                name: item.name,
+                price: Number(item.listPrice),
+                listPrice: Number(item.listPrice),
+                isActive: Boolean(item.isActive && Number(item.listPrice) > 0),
+                description: item.specifications || '',
+                specifications: item.specifications || '',
+                image: item.imageUrl || '',
+                imageUrl: item.imageUrl || '',
+                home: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+                assignedFuneralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+                funeralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+                assignedPackages: Array.isArray(item.assignedPackages) ? item.assignedPackages : [],
+                isMandatory: Boolean(item.isMandatory),
+                isFixedPrice: Boolean(item.isFixedPrice),
+                type: item.type || 'Guaranteed',
+                category: item.category || item.type || 'Guaranteed',
+                assignment: activeHome?.name || item.assignment || 'Specific Location',
+                taxable: true
+              }))
+          : [];
+        setAdminDb(prev => ({ ...prev, caskets: backendCaskets }));
       })
       .catch(err => console.warn('Live caskets load failed:', err));
 
     // 3. Fetch live Add-ons
     api.get(`/catalog/location/${selectedHomeId}?type=ADDON`)
       .then(res => {
-        if (mounted && Array.isArray(res.data)) {
-          const backendAddons = res.data
-            .filter(item => {
-              const hasDest = Boolean(item.hasDestinations && Array.isArray(item.destinations) && item.destinations.length > 0);
-              const hasPrice = item.listPrice !== null && item.listPrice !== undefined && Number(item.listPrice) > 0;
-              return hasPrice || hasDest;
-            })
-            .map(item => ({
-              id: item._id || item.id,
-              _id: item._id || item.id,
-              name: item.name,
-              price: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : null,
-              listPrice: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : null,
-              isActive: Boolean(
-                item.isActive && ((item.listPrice !== null && Number(item.listPrice) > 0) || (item.hasDestinations && item.destinations?.length > 0))
-              ),
-              description: item.specifications || '',
-              specifications: item.specifications || '',
-              home: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-              assignedFuneralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-              funeralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-              assignedPackages: Array.isArray(item.assignedPackages) ? item.assignedPackages : [],
-              isMandatory: Boolean(item.isMandatory),
-              isFixedPrice: Boolean(item.isFixedPrice),
-              hasDestinations: Boolean(item.hasDestinations),
-              destinations: Array.isArray(item.destinations) ? item.destinations : [],
-              type: item.type || 'Non-Guaranteed',
-              category: item.category || item.type || 'Non-Guaranteed',
-              assignment: activeHome?.name || item.assignment || 'Specific Location',
-              taxable: false
-            }));
-          setAdminDb(prev => ({ ...prev, addons: backendAddons }));
-        }
+        if (!mounted) return;
+        const backendAddons = Array.isArray(res.data)
+          ? res.data
+              .filter(item => {
+                const hasDest = Boolean(item.hasDestinations && Array.isArray(item.destinations) && item.destinations.length > 0);
+                const hasPrice = item.listPrice !== null && item.listPrice !== undefined && Number(item.listPrice) > 0;
+                return hasPrice || hasDest;
+              })
+              .map(item => ({
+                id: item._id || item.id,
+                _id: item._id || item.id,
+                name: item.name,
+                price: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : null,
+                listPrice: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : null,
+                isActive: Boolean(
+                  item.isActive && ((item.listPrice !== null && Number(item.listPrice) > 0) || (item.hasDestinations && item.destinations?.length > 0))
+                ),
+                description: item.specifications || '',
+                specifications: item.specifications || '',
+                home: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+                assignedFuneralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+                funeralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
+                assignedPackages: Array.isArray(item.assignedPackages) ? item.assignedPackages : [],
+                isMandatory: Boolean(item.isMandatory),
+                isFixedPrice: Boolean(item.isFixedPrice),
+                hasDestinations: Boolean(item.hasDestinations),
+                destinations: Array.isArray(item.destinations) ? item.destinations : [],
+                type: item.type || 'Non-Guaranteed',
+                category: item.category || item.type || 'Non-Guaranteed',
+                assignment: activeHome?.name || item.assignment || 'Specific Location',
+                taxable: false
+              }))
+          : [];
+        setAdminDb(prev => ({ ...prev, addons: backendAddons }));
       })
       .catch(err => console.warn('Live addons load failed:', err));
 
     return () => { mounted = false; };
-  }, [selectedHomeId]);
+  }, [clearLocationData, selectedHomeId]);
 
   // Ensure selectedHomeId stays valid if homes list updates
   useEffect(() => {
@@ -516,6 +535,82 @@ export function AdminDataProvider({ children }) {
       return true;
     } catch (err) {
       console.error('Failed to create service package:', err);
+      addToast(formatErrorMessage(err), 'error');
+      return false;
+    }
+  }, [addToast, lang, selectedHomeId]);
+
+  const handleUpdateServicePackage = useCallback(async ({ packageId, packageName, category, itemizedServices, section1Price, section2Price, homeId }) => {
+    const targetHome = homeId || selectedHomeId;
+    const s1 = Math.max(0, Number(section1Price) || 0);
+    const s2 = Math.max(0, Number(section2Price) || 0);
+
+    try {
+      const payload = {
+        packageName: packageName.trim(),
+        category: category.trim(),
+        itemizedServices: itemizedServices || {},
+        section1Price: s1,
+        section2Price: s2,
+      };
+
+      try {
+        await api.patch(`/funeral-homes/${targetHome}/packages/${packageId}`, payload);
+      } catch (patchErr) {
+        // Fallback: update in catalog or save as custom package
+        try {
+          await api.patch(`/catalog/${packageId}`, {
+            name: packageName.trim(),
+            category: category.trim(),
+            section1Price: s1,
+            section2Price: s2
+          });
+        } catch {
+          // If neither exists by this ID, create it as a package for this home
+          await api.post(`/funeral-homes/${targetHome}/packages`, payload);
+        }
+      }
+
+      setServiceItems(prev => prev.map(item => {
+        if ((item._id || item.id) === packageId) {
+          return {
+            ...item,
+            name: packageName.trim(),
+            packageName: packageName.trim(),
+            category: category.trim(),
+            itemizedServices: itemizedServices || item.itemizedServices || {},
+            section1Price: s1,
+            section2Price: s2
+          };
+        }
+        return item;
+      }));
+
+      const packageKey = `${targetHome}|${packageId}`;
+      setAdminDb(prev => ({
+        ...prev,
+        packages: {
+          ...(prev.packages || {}),
+          [packageKey]: {
+            section1: s1,
+            section2: s2,
+            verified: true,
+            catalogId: packageId,
+            name: packageName.trim(),
+            category: category.trim(),
+            itemizedServices: itemizedServices || {},
+            isCustom: true
+          }
+        }
+      }));
+
+      addToast(
+        lang === 'es' ? 'Paquete de servicio actualizado correctamente.' : 'Service package updated successfully.',
+        'success'
+      );
+      return true;
+    } catch (err) {
+      console.error('Failed to update service package:', err);
       addToast(formatErrorMessage(err), 'error');
       return false;
     }
@@ -977,10 +1072,12 @@ export function AdminDataProvider({ children }) {
         handleDeleteHome,
 
         // Pricing
+        clearLocationData,
         handleCasketPriceChange,
         handleAddonPriceChange,
         handlePackagePriceChange,
         handleAddServicePackage,
+        handleUpdateServicePackage,
         handleDeleteServicePackage,
         handleAddItem,
         handleUpdateItem,

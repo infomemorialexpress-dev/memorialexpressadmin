@@ -18,8 +18,10 @@ export default function PricingManagementPage() {
     serviceItems,
     isLoadingServices,
     refreshHomes,
+    clearLocationData,
     handlePackagePriceChange,
     handleAddServicePackage,
+    handleUpdateServicePackage,
     handleDeleteServicePackage,
     handleAddItem,
     handleUpdateItem,
@@ -38,6 +40,7 @@ export default function PricingManagementPage() {
   const [activeTab, setActiveTab] = useState('caskets'); // 'caskets' | 'services' | 'addons'
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAddPackageModalOpen, setIsAddPackageModalOpen] = useState(false);
+  const [editingPackage, setEditingPackage] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editingItemType, setEditingItemType] = useState('casket');
@@ -84,7 +87,13 @@ export default function PricingManagementPage() {
               <select
                 id="funeral-home-select"
                 value={currentHomeId}
-                onChange={(e) => setSelectedHomeId(e.target.value)}
+                onChange={(e) => {
+                  const newHomeId = e.target.value;
+                  if (typeof clearLocationData === 'function') {
+                    clearLocationData();
+                  }
+                  setSelectedHomeId(newHomeId);
+                }}
                 className="form-select location-dropdown"
               >
                 {homes.map((home) => {
@@ -151,6 +160,7 @@ export default function PricingManagementPage() {
             variant="primary"
             onClick={() => {
               if (activeTab === 'services') {
+                setEditingPackage(null);
                 setIsAddPackageModalOpen(true);
               } else {
                 setIsAddModalOpen(true);
@@ -367,6 +377,10 @@ export default function PricingManagementPage() {
               serviceItems={serviceItems}
               isLoadingServices={isLoadingServices}
               onPackageChange={handlePackagePriceChange}
+              onEditPackage={(pkg) => {
+                setEditingPackage(pkg);
+                setIsAddPackageModalOpen(true);
+              }}
               onDeletePackage={(packageId) => handleDeleteServicePackage(currentHomeId, packageId)}
               lang={lang}
             />
@@ -566,13 +580,24 @@ export default function PricingManagementPage() {
         lang={lang}
       />
 
-      {/* 5. MODAL: ADD CUSTOM SERVICE PACKAGE */}
+      {/* 5. MODAL: ADD / EDIT CUSTOM SERVICE PACKAGE */}
       <AddServicePackageModal
         isOpen={isAddPackageModalOpen}
-        onClose={() => setIsAddPackageModalOpen(false)}
+        onClose={() => {
+          setIsAddPackageModalOpen(false);
+          setEditingPackage(null);
+        }}
         onSavePackage={async (pkgData) => {
+          if (editingPackage) {
+            return await handleUpdateServicePackage({
+              ...pkgData,
+              packageId: pkgData.packageId || editingPackage._id || editingPackage.id || editingPackage.serviceId,
+              homeId: currentHomeId
+            });
+          }
           return await handleAddServicePackage({ ...pkgData, homeId: currentHomeId });
         }}
+        editingPackage={editingPackage}
         locationName={activeHome?.name || 'Selected Funeral Home'}
         locationId={currentHomeId}
         lang={lang}
