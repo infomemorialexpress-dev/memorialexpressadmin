@@ -16,15 +16,25 @@ export default function AddServicePackageModal({
   const [packageName, setPackageName] = useState('');
   const [category, setCategory] = useState('Traditional');
 
-  // Itemized Services Breakdown state (default values matching One-Day Funeral baseline)
+  // Itemized Services Breakdown state
   const [arrangements, setArrangements] = useState('2050');
   const [transfer, setTransfer] = useState('695');
   const [embalming, setEmbalming] = useState('525');
   const [otherPreparation, setOtherPreparation] = useState('200');
   const [visitation, setVisitation] = useState('300');
   const [funeralService, setFuneralService] = useState('150');
+  const [eveningService, setEveningService] = useState('0');
+  const [familyCar, setFamilyCar] = useState('0');
   const [funeralCoach, setFuneralCoach] = useState('375');
   const [utilityVehicles, setUtilityVehicles] = useState('100');
+
+  // Exactly 3 custom 'Other Services' rows
+  const [otherServices, setOtherServices] = useState([
+    { name: '', price: '' },
+    { name: '', price: '' },
+    { name: '', price: '' }
+  ]);
+
   const [packageSavings, setPackageSavings] = useState('1000');
 
   // Section 2 Facilities & Automotive
@@ -32,6 +42,14 @@ export default function AddServicePackageModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const handleOtherServiceChange = (index, field, value) => {
+    setOtherServices(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
 
   // Pre-fill fields whenever modal opens or editingPackage changes
   useEffect(() => {
@@ -48,9 +66,27 @@ export default function AddServicePackageModal({
           setOtherPreparation(String(itemized.otherPreparation ?? '0'));
           setVisitation(String(itemized.visitation ?? '0'));
           setFuneralService(String(itemized.funeralService ?? '0'));
+          setEveningService(String(itemized.eveningService ?? '0'));
+          setFamilyCar(String(itemized.familyCar ?? '0'));
           setFuneralCoach(String(itemized.funeralCoach ?? '0'));
           setUtilityVehicles(String(itemized.utilityVehicles ?? '0'));
           setPackageSavings(String(itemized.packageSavings ?? '0'));
+
+          const rawOthers = Array.isArray(itemized.otherServices) ? itemized.otherServices : [];
+          setOtherServices([
+            {
+              name: rawOthers[0]?.name || '',
+              price: rawOthers[0]?.price !== undefined && rawOthers[0]?.price !== null ? String(rawOthers[0].price) : ''
+            },
+            {
+              name: rawOthers[1]?.name || '',
+              price: rawOthers[1]?.price !== undefined && rawOthers[1]?.price !== null ? String(rawOthers[1].price) : ''
+            },
+            {
+              name: rawOthers[2]?.name || '',
+              price: rawOthers[2]?.price !== undefined && rawOthers[2]?.price !== null ? String(rawOthers[2].price) : ''
+            }
+          ]);
         } else {
           // If no previous itemized breakdown was stored, place existing section1 price in arrangements
           const s1 = editingPackage.section1Price !== undefined
@@ -62,9 +98,16 @@ export default function AddServicePackageModal({
           setOtherPreparation('0');
           setVisitation('0');
           setFuneralService('0');
+          setEveningService('0');
+          setFamilyCar('0');
           setFuneralCoach('0');
           setUtilityVehicles('0');
           setPackageSavings('0');
+          setOtherServices([
+            { name: '', price: '' },
+            { name: '', price: '' },
+            { name: '', price: '' }
+          ]);
         }
 
         const s2 = editingPackage.section2Price !== undefined
@@ -81,8 +124,15 @@ export default function AddServicePackageModal({
         setOtherPreparation('200');
         setVisitation('300');
         setFuneralService('150');
+        setEveningService('0');
+        setFamilyCar('0');
         setFuneralCoach('375');
         setUtilityVehicles('100');
+        setOtherServices([
+          { name: '', price: '' },
+          { name: '', price: '' },
+          { name: '', price: '' }
+        ]);
         setPackageSavings('1000');
         setSection2Price('0');
       }
@@ -99,10 +149,19 @@ export default function AddServicePackageModal({
   const numOtherPreparation = Math.max(0, Number(otherPreparation) || 0);
   const numVisitation = Math.max(0, Number(visitation) || 0);
   const numFuneralService = Math.max(0, Number(funeralService) || 0);
+  const numEveningService = Math.max(0, Number(eveningService) || 0);
+  const numFamilyCar = Math.max(0, Number(familyCar) || 0);
   const numFuneralCoach = Math.max(0, Number(funeralCoach) || 0);
   const numUtilityVehicles = Math.max(0, Number(utilityVehicles) || 0);
   const numPackageSavings = Math.max(0, Number(packageSavings) || 0);
   const numSection2 = Math.max(0, Number(section2Price) || 0);
+
+  // Custom 3 other services formatted
+  const otherServicesFormatted = otherServices.map((o) => ({
+    name: (o.name || '').trim(),
+    price: Math.max(0, Number(o.price) || 0)
+  }));
+  const totalOtherServices = otherServicesFormatted.reduce((acc, o) => acc + o.price, 0);
 
   // Dynamic calculations
   const grossServices =
@@ -112,8 +171,11 @@ export default function AddServicePackageModal({
     numOtherPreparation +
     numVisitation +
     numFuneralService +
+    numEveningService +
+    numFamilyCar +
     numFuneralCoach +
-    numUtilityVehicles;
+    numUtilityVehicles +
+    totalOtherServices;
 
   const totalSection1 = Math.max(0, grossServices - numPackageSavings);
   const grandTotalPackageRate = totalSection1 + numSection2;
@@ -140,8 +202,11 @@ export default function AddServicePackageModal({
           otherPreparation: numOtherPreparation,
           visitation: numVisitation,
           funeralService: numFuneralService,
+          eveningService: numEveningService,
+          familyCar: numFamilyCar,
           funeralCoach: numFuneralCoach,
           utilityVehicles: numUtilityVehicles,
+          otherServices: otherServicesFormatted,
           packageSavings: numPackageSavings,
         },
         section1Price: totalSection1,
@@ -166,7 +231,7 @@ export default function AddServicePackageModal({
       <div
         className="modal-container add-service-package-modal"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: 720, maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}
+        style={{ maxWidth: 760, maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}
       >
         {/* Modal Header */}
         <div className="modal-header">
@@ -223,7 +288,7 @@ export default function AddServicePackageModal({
             />
           </div>
 
-          {/* Itemized Services Breakdown Card (Section 1) */}
+          {/* Itemized Services Breakdown Card (Section 1 Standard Inputs) */}
           <div
             style={{
               border: '1.5px solid #cbd5e1',
@@ -244,14 +309,14 @@ export default function AddServicePackageModal({
               }}
             >
               <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#183655' }}>
-                📝 {lang === 'es' ? 'Sección I — Servicios Detallados' : 'Section I — Itemized Services'}
+                📝 {lang === 'es' ? 'Sección I — Servicios Estándar' : 'Section I — Standard Services'}
               </span>
               <span style={{ fontSize: '11.5px', color: '#64748b' }}>
                 {lang === 'es' ? 'Tarifas individuales para cada concepto' : 'Enter rates for each service component'}
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px 16px' }}>
               <InputField
                 label={lang === 'es' ? 'Arreglos y personal profesional ($)' : 'Arrangements and professional staff ($)'}
                 type="number"
@@ -312,6 +377,28 @@ export default function AddServicePackageModal({
                 onChange={(e) => setFuneralService(e.target.value)}
               />
 
+              {/* NEW: Evening Service */}
+              <InputField
+                label={lang === 'es' ? 'Servicio nocturno ($)' : 'Evening Service ($)'}
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={eveningService}
+                onChange={(e) => setEveningService(e.target.value)}
+              />
+
+              {/* NEW: Family Car */}
+              <InputField
+                label={lang === 'es' ? 'Auto familiar ($)' : 'Family car ($)'}
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={familyCar}
+                onChange={(e) => setFamilyCar(e.target.value)}
+              />
+
               <InputField
                 label={lang === 'es' ? 'Carroza funeraria ($)' : 'Funeral coach ($)'}
                 type="number"
@@ -322,8 +409,9 @@ export default function AddServicePackageModal({
                 onChange={(e) => setFuneralCoach(e.target.value)}
               />
 
+              {/* Dedicated Utility Vehicles */}
               <InputField
-                label={lang === 'es' ? 'Vehículos utilitarios / otros ($)' : 'Utility vehicles / other ($)'}
+                label={lang === 'es' ? 'Vehículos utilitarios ($)' : 'Utility Vehicles ($)'}
                 type="number"
                 min="0"
                 step="1"
@@ -332,28 +420,124 @@ export default function AddServicePackageModal({
                 onChange={(e) => setUtilityVehicles(e.target.value)}
               />
             </div>
+          </div>
 
-            {/* Package Savings input (Highlighted) */}
+          {/* NEW: Other Services Section (Exactly 3 Custom Rows) */}
+          <div
+            style={{
+              border: '1.5px solid #cbd5e1',
+              borderRadius: '12px',
+              padding: '16px 18px',
+              backgroundColor: '#f8fafc',
+              marginBottom: 18,
+            }}
+          >
             <div
               style={{
-                marginTop: 14,
-                padding: '12px 14px',
-                backgroundColor: '#fffbeb',
-                border: '1.5px solid #fde68a',
-                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 14,
+                paddingBottom: 8,
+                borderBottom: '1.5px solid #e2e8f0',
               }}
             >
-              <InputField
-                label={lang === 'es' ? '📉 Descuento / Ahorro del Paquete ($) — Se resta de Sección 1' : '📉 Package Savings ($) — Subtracted from Section 1'}
-                type="number"
-                min="0"
-                step="1"
-                placeholder="1000"
-                value={packageSavings}
-                onChange={(e) => setPackageSavings(e.target.value)}
-                style={{ margin: 0 }}
-              />
+              <div>
+                <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#183655' }}>
+                  ✨ {lang === 'es' ? 'Otros Servicios Personalizados' : 'Other Services'}
+                </span>
+                <span style={{ fontSize: '11.5px', color: '#64748b', display: 'block', marginTop: 2 }}>
+                  {lang === 'es'
+                    ? 'Agregue hasta 3 conceptos adicionales con su nombre y tarifa'
+                    : 'Add up to 3 custom itemized services with custom name and price'}
+                </span>
+              </div>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#0284c7',
+                  backgroundColor: '#e0f2fe',
+                  padding: '3px 8px',
+                  borderRadius: 6
+                }}
+              >
+                3 {lang === 'es' ? 'filas disponibles' : 'custom rows'}
+              </span>
             </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[0, 1, 2].map((idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(0, 2fr) minmax(130px, 1fr)',
+                    gap: '12px',
+                    alignItems: 'end',
+                    backgroundColor: '#ffffff',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}
+                >
+                  <InputField
+                    label={
+                      lang === 'es'
+                        ? `Nombre de Servicio #${idx + 1}`
+                        : `Service Name #${idx + 1}`
+                    }
+                    placeholder={
+                      idx === 0
+                        ? (lang === 'es' ? 'ej. Escolta de limusina' : 'e.g. Limousine Escort')
+                        : idx === 1
+                        ? (lang === 'es' ? 'ej. Auto de flores' : 'e.g. Flower Car')
+                        : (lang === 'es' ? 'ej. Servicio conmemorativo adicional' : 'e.g. Additional Memorial Service')
+                    }
+                    value={otherServices[idx].name}
+                    onChange={(e) => handleOtherServiceChange(idx, 'name', e.target.value)}
+                    style={{ marginBottom: 0 }}
+                  />
+
+                  <InputField
+                    label={
+                      lang === 'es'
+                        ? `Precio ($)`
+                        : `Price ($)`
+                    }
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="0"
+                    value={otherServices[idx].price}
+                    onChange={(e) => handleOtherServiceChange(idx, 'price', e.target.value)}
+                    style={{ marginBottom: 0 }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Package Savings input (Highlighted) */}
+          <div
+            style={{
+              marginBottom: 18,
+              padding: '12px 14px',
+              backgroundColor: '#fffbeb',
+              border: '1.5px solid #fde68a',
+              borderRadius: '8px',
+            }}
+          >
+            <InputField
+              label={lang === 'es' ? '📉 Descuento / Ahorro del Paquete ($) — Se resta de Sección 1' : '📉 Package Savings ($) — Subtracted from Section 1'}
+              type="number"
+              min="0"
+              step="1"
+              placeholder="1000"
+              value={packageSavings}
+              onChange={(e) => setPackageSavings(e.target.value)}
+              style={{ margin: 0 }}
+            />
           </div>
 
           {/* Section 2: Facilities */}
@@ -380,9 +564,20 @@ export default function AddServicePackageModal({
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569', marginBottom: 6 }}>
-              <span>{lang === 'es' ? 'Subtotal Servicios Brutos (8 conceptos):' : 'Gross Services Subtotal (8 items):'}</span>
+              <span>
+                {lang === 'es'
+                  ? 'Subtotal Servicios Brutos (Estándar + Otros Servicios):'
+                  : 'Gross Services Subtotal (Standard + Other Services):'}
+              </span>
               <span style={{ fontWeight: 650 }}>{formatMoney(grossServices)}</span>
             </div>
+
+            {totalOtherServices > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: '#0369a1', marginBottom: 6 }}>
+                <span>• {lang === 'es' ? 'Incluye Otros Servicios:' : 'Includes Other Services:'}</span>
+                <span style={{ fontWeight: 600 }}>+{formatMoney(totalOtherServices)}</span>
+              </div>
+            )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#b91c1c', marginBottom: 8 }}>
               <span>{lang === 'es' ? '(-) Ahorro de Paquete (Package Savings):' : '(-) Package Savings:'}</span>
