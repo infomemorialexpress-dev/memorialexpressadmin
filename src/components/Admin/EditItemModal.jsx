@@ -149,7 +149,8 @@ export default function EditItemModal({
         return;
       }
     } else {
-      if (price === '' || isNaN(Number(price)) || Number(price) < 0) {
+      const parsedPrice = price === '' ? 0 : Number(price);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
         setError(lang === 'es' ? 'Ingrese un precio válido.' : 'Please enter a valid price.');
         return;
       }
@@ -157,7 +158,7 @@ export default function EditItemModal({
 
     const resolvedPrice = (!isCasket && hasDestinations)
       ? (destinations[0]?.defaultPrice || 0)
-      : Number(price);
+      : (price === '' ? 0 : Number(price));
 
     setIsSubmitting(true);
     try {
@@ -504,12 +505,14 @@ export default function EditItemModal({
             </div>
           )}
 
-          <InputField
-            label={lang === 'es' ? 'Especificaciones y Material' : 'Specifications & Material'}
-            placeholder="e.g. Solid Oak, Rosetan Velvet interior, Polished Finish"
-            value={specifications}
-            onChange={(e) => setSpecifications(e.target.value)}
-          />
+          {isCasket && (
+            <InputField
+              label={lang === 'es' ? 'Especificaciones y Material' : 'Specifications & Material'}
+              placeholder="e.g. Solid Oak, Rosetan Velvet interior, Polished Finish"
+              value={specifications}
+              onChange={(e) => setSpecifications(e.target.value)}
+            />
+          )}
 
           <div className="modal-actions-footer">
             <Button

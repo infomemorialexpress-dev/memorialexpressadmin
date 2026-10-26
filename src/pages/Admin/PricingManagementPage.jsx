@@ -56,12 +56,12 @@ export default function PricingManagementPage() {
     return matchesHome && hasValidPrice;
   });
 
-  // Filter addons exclusively for this location that actually exist with valid price or destinations
+  // Filter addons exclusively for this location that actually exist with valid price (>= 0) or destinations
   const visibleAddons = (adminDb.addons || []).filter((a) => {
     const itemHome = a.funeralHomeId || a.assignedFuneralHomeId || a.home;
     const matchesHome = String(itemHome) === String(currentHomeId);
     const hasDest = Boolean(a.hasDestinations && Array.isArray(a.destinations) && a.destinations.length > 0);
-    const hasValidPrice = (a.price !== null && a.price !== undefined && Number(a.price) > 0) || hasDest;
+    const hasValidPrice = (a.price !== null && a.price !== undefined && Number(a.price) >= 0) || hasDest;
     return matchesHome && hasValidPrice;
   });
 
@@ -426,7 +426,7 @@ export default function PricingManagementPage() {
                   ) : (
                     visibleAddons.map((addon) => {
                       const hasDestinations = Boolean(addon.hasDestinations && addon.destinations?.length > 0);
-                      const isPriceSet = addon.price !== null && addon.price !== undefined && Number(addon.price) > 0;
+                      const isPriceSet = addon.price !== null && addon.price !== undefined && Number(addon.price) >= 0;
                       const isItemActive = hasDestinations || (isPriceSet && addon.isActive !== false);
 
                       return (

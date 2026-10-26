@@ -139,7 +139,8 @@ export default function AddItemModal({
         return;
       }
     } else {
-      if (price === '' || isNaN(Number(price)) || Number(price) < 0) {
+      const parsedPrice = price === '' ? 0 : Number(price);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
         setError(lang === 'es' ? 'Ingrese un precio válido.' : 'Please enter a valid price.');
         return;
       }
@@ -147,7 +148,7 @@ export default function AddItemModal({
 
     const resolvedPrice = (category === 'addon' && hasDestinations)
       ? (destinations[0]?.defaultPrice || 0)
-      : Number(price);
+      : (price === '' ? 0 : Number(price));
 
     setIsSubmitting(true);
     const success = await onAddItem({
@@ -503,12 +504,14 @@ export default function AddItemModal({
             required
           />
 
-          <InputField
-            label={lang === 'es' ? 'Especificaciones / Material' : 'Specifications & Material'}
-            placeholder="e.g. 18 Gauge Steel, Velvet Interior, Brushed Finish"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+          {category === 'casket' && (
+            <InputField
+              label={lang === 'es' ? 'Especificaciones / Material' : 'Specifications & Material'}
+              placeholder="e.g. 18 Gauge Steel, Velvet Interior, Brushed Finish"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          )}
 
           <div className="modal-actions-footer">
             <Button

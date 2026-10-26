@@ -228,17 +228,17 @@ export function AdminDataProvider({ children }) {
           ? res.data
               .filter(item => {
                 const hasDest = Boolean(item.hasDestinations && Array.isArray(item.destinations) && item.destinations.length > 0);
-                const hasPrice = item.listPrice !== null && item.listPrice !== undefined && Number(item.listPrice) > 0;
+                const hasPrice = item.listPrice !== null && item.listPrice !== undefined && Number(item.listPrice) >= 0;
                 return hasPrice || hasDest;
               })
               .map(item => ({
                 id: item._id || item.id,
                 _id: item._id || item.id,
                 name: item.name,
-                price: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : null,
-                listPrice: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : null,
+                price: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : (item.price !== null && item.price !== undefined ? Number(item.price) : 0),
+                listPrice: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : (item.price !== null && item.price !== undefined ? Number(item.price) : 0),
                 isActive: Boolean(
-                  item.isActive && ((item.listPrice !== null && Number(item.listPrice) > 0) || (item.hasDestinations && item.destinations?.length > 0))
+                  item.isActive && ((item.listPrice !== null && Number(item.listPrice) >= 0) || (item.hasDestinations && item.destinations?.length > 0))
                 ),
                 description: item.specifications || '',
                 specifications: item.specifications || '',
