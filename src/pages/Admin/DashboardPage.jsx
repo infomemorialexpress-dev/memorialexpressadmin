@@ -43,20 +43,29 @@ export default function DashboardPage() {
   const caskets = adminDb?.caskets || [];
   const addons = adminDb?.addons || [];
 
-  // Metrics from API aggregation with context fallback
-  const counts = summaryData?.counts || {
-    totalAgents: agents.length,
-    verifiedAgents: agents.filter(a => (a.verificationStatus || a.status || '').toLowerCase() === 'verified').length,
-    pendingAgents: agents.filter(a => (a.verificationStatus || a.status || '').toLowerCase() === 'pending').length,
-    suspendedAgents: agents.filter(a => (a.verificationStatus || a.status || '').toLowerCase() === 'suspended').length,
+  // Dynamic agent metrics from live context agents state with summary fallback
+  const totalAgentsCount = agents.length > 0 ? agents.length : (summaryData?.counts?.totalAgents || 0);
+  const verifiedAgentsCount = agents.length > 0
+    ? agents.filter(a => (a.verificationStatus || a.status || '').toLowerCase() === 'verified').length
+    : (summaryData?.counts?.verifiedAgents || 0);
+  const pendingAgentsCount = agents.length > 0
+    ? agents.filter(a => (a.verificationStatus || a.status || '').toLowerCase() === 'pending').length
+    : (summaryData?.counts?.pendingAgents || 0);
+  const suspendedAgentsCount = agents.length > 0
+    ? agents.filter(a => (a.verificationStatus || a.status || '').toLowerCase() === 'suspended').length
+    : (summaryData?.counts?.suspendedAgents || 0);
+
+  const counts = {
+    totalAgents: totalAgentsCount,
+    verifiedAgents: verifiedAgentsCount,
+    pendingAgents: pendingAgentsCount,
+    suspendedAgents: suspendedAgentsCount,
     totalHomes: homes.length,
     totalChapels: homes.reduce((acc, h) => acc + (h.locations?.length || 1), 0),
     totalCaskets: caskets.length,
     totalAddons: addons.length,
     totalServices: 0
   };
-
-  const pendingAgentsCount = counts.pendingAgents;
 
   const handleNavigateToPricing = (homeId) => {
     setSelectedHomeId(homeId);
@@ -67,9 +76,9 @@ export default function DashboardPage() {
     ? summaryData.recentHomes
     : homes.slice(0, 4);
 
-  const displayAgents = summaryData?.recentAgents && summaryData.recentAgents.length > 0
-    ? summaryData.recentAgents
-    : agents.slice(0, 5);
+  const displayAgents = agents && agents.length > 0
+    ? agents.slice(0, 5)
+    : (summaryData?.recentAgents || []);
 
   return (
     <div className="dashboard-page">
@@ -103,9 +112,9 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* System Statistics Cards Grid - Actual Aggregated Counts */}
+      {/* System Statistics Cards Grid - Dynamic Counts */}
       {isLoading ? (
-        <StatCardsSkeleton count={4} />
+        <StatCardsSkeleton count={5} />
       ) : (
         <div className="stats-grid">
         <StatCard
@@ -127,6 +136,31 @@ export default function DashboardPage() {
           badgeText={`${counts.verifiedAgents}/${counts.totalAgents} Active`}
           badgeType="success"
           accentColor="#183655"
+          onClick={() => navigate('/users')}
+        />
+
+        {/* Dynamic Pending Review Stat Card */}
+        <StatCard
+          icon={
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          }
+          label={lang === 'es' ? 'Pendientes de Revisión' : 'Pending Review'}
+          value={counts.pendingAgents}
+          subtext={
+            lang === 'es'
+              ? counts.pendingAgents === 1
+                ? '1 agente esperando aprobación'
+                : `${counts.pendingAgents} agentes esperando aprobación`
+              : counts.pendingAgents === 1
+                ? '1 agent awaiting approval'
+                : `${counts.pendingAgents} agents awaiting approval`
+          }
+          badgeText={counts.pendingAgents > 0 ? `${counts.pendingAgents} Action Req.` : 'All Clear'}
+          badgeType={counts.pendingAgents > 0 ? 'warning' : 'success'}
+          accentColor="#b45309"
           onClick={() => navigate('/users')}
         />
 

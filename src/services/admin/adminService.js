@@ -423,6 +423,7 @@ export const DEFAULT_AGENTS = [];
 function normalizeAgent(agent) {
   if (!agent) return null;
   const rawStatus = (agent.verificationStatus || agent.status || 'PENDING').toLowerCase();
+  const isVerified = rawStatus === 'verified';
   return {
     id: agent.id || agent._id,
     _id: agent._id || agent.id,
@@ -432,11 +433,14 @@ function normalizeAgent(agent) {
     phone: agent.phone || '',
     licenseId: agent.licenseId || '',
     territory: agent.territory || '',
-    assignedHome: agent.assignedHome?.name || (typeof agent.assignedHome === 'string' ? agent.assignedHome : '') || 'All Locations',
-    assignedHomeId: agent.assignedHome?._id || agent.assignedHome?.id || (typeof agent.assignedHome === 'string' ? agent.assignedHome : ''),
+    agentNumber: agent.agentNumber || '',
+    uplineName: agent.uplineName || '',
+    assignedHome: agent.assignedHome?.name || (typeof agent.assignedHome === 'string' && !agent.assignedHome.match(/^[0-9a-fA-F]{24}$/) ? agent.assignedHome : '') || 'All Locations',
+    assignedHomeId: agent.assignedHome?._id || agent.assignedHome?.id || (typeof agent.assignedHome === 'string' && agent.assignedHome.match(/^[0-9a-fA-F]{24}$/) ? agent.assignedHome : ''),
     assignedHomeObj: agent.assignedHome,
     status: rawStatus,
     verificationStatus: rawStatus.toUpperCase(),
+    isActive: agent.isActive !== undefined ? Boolean(agent.isActive) : isVerified,
     joinedDate: agent.createdAt ? agent.createdAt.split('T')[0] : (agent.joinedDate || ''),
     password: agent.password || '',
     quotesCount: agent.quotesCount || 0,
@@ -576,10 +580,21 @@ export async function updateAgent(agentId, updates) {
       const homeVal = updates.assignedHomeId || updates.assignedHome;
       if (typeof homeVal === 'string' && homeVal.match(/^[0-9a-fA-F]{24}$/)) {
         payload.assignedHome = homeVal;
+      } else if (!homeVal || homeVal === 'All Locations') {
+        payload.assignedHome = null;
       }
     }
     if (updates.status !== undefined || updates.verificationStatus !== undefined) {
-      payload.verificationStatus = (updates.verificationStatus || updates.status || 'PENDING').toUpperCase();
+      const vStatus = (updates.verificationStatus || updates.status || 'PENDING').toUpperCase();
+      payload.verificationStatus = vStatus;
+      if (vStatus === 'VERIFIED') {
+        payload.isActive = true;
+      } else if (vStatus === 'SUSPENDED') {
+        payload.isActive = false;
+      }
+    }
+    if (updates.isActive !== undefined) {
+      payload.isActive = Boolean(updates.isActive);
     }
     if (updates.password && updates.password.trim()) {
       payload.password = updates.password.trim();
@@ -606,6 +621,11 @@ export async function updateAgent(agentId, updates) {
       if (updates.fullName) merged.name = updates.fullName;
       if (updates.status) merged.verificationStatus = updates.status.toUpperCase();
       if (updates.verificationStatus) merged.status = updates.verificationStatus.toLowerCase();
+      if (merged.verificationStatus === 'VERIFIED') {
+        merged.isActive = true;
+      } else if (merged.verificationStatus === 'SUSPENDED') {
+        merged.isActive = false;
+      }
       agents[idx] = merged;
       saveStoredAgents(agents);
       return { success: true, agent: merged, allAgents: agents };
@@ -621,9 +641,11 @@ export async function updateAgent(agentId, updates) {
  * Toggles or sets agent verification status.
  */
 export async function setAgentVerificationStatus(agentId, newStatus) {
+  const isVerified = newStatus.toLowerCase() === 'verified';
   return updateAgent(agentId, {
     status: newStatus.toLowerCase(),
-    verificationStatus: newStatus.toUpperCase()
+    verificationStatus: newStatus.toUpperCase(),
+    isActive: isVerified
   });
 }
 

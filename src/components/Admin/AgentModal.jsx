@@ -30,12 +30,12 @@ export default function AgentModal({
 
   useEffect(() => {
     if (initialData) {
-      const homeIdVal =
-        initialData.assignedHome?._id ||
-        initialData.assignedHome?.id ||
-        initialData.assignedHomeId ||
-        (typeof initialData.assignedHome === 'string' ? initialData.assignedHome : '') ||
-        '';
+      const matchedInitialHome = funeralHomes.find(
+        h => (h._id && (h._id === initialData.assignedHomeId || h._id === initialData.assignedHome?._id || h._id === initialData.assignedHome)) ||
+             (h.id && (h.id === initialData.assignedHomeId || h.id === initialData.assignedHome?.id || h.id === initialData.assignedHome)) ||
+             (h.name && (h.name === initialData.assignedHome || h.name === initialData.assignedHome?.name))
+      );
+      const homeIdVal = matchedInitialHome ? (matchedInitialHome._id || matchedInitialHome.id) : (initialData.assignedHomeId || '');
 
       const agentStatus = (initialData.verificationStatus || initialData.status || 'pending').toLowerCase();
 
@@ -128,6 +128,12 @@ export default function AgentModal({
              h.name === formData.assignedHome
       );
 
+      const targetHomeId = matchedHome
+        ? (matchedHome._id || matchedHome.id)
+        : (formData.assignedHome && formData.assignedHome.match(/^[0-9a-fA-F]{24}$/) ? formData.assignedHome : null);
+
+      const isVerified = formData.status === 'verified';
+
       const payload = {
         fullName: formData.fullName.trim(),
         name: formData.fullName.trim(),
@@ -135,12 +141,13 @@ export default function AgentModal({
         phone: formData.phone.trim(),
         licenseId: formData.licenseId.trim(),
         territory: formData.territory.trim(),
-        assignedHomeId: matchedHome ? (matchedHome._id || matchedHome.id) : undefined,
-        assignedHome: matchedHome ? matchedHome.name : formData.assignedHome,
+        assignedHomeId: targetHomeId,
+        assignedHome: targetHomeId,
         agentNumber: formData.agentNumber.trim(),
         uplineName: formData.uplineName.trim(),
         status: formData.status,
-        verificationStatus: formData.status.toUpperCase()
+        verificationStatus: formData.status.toUpperCase(),
+        isActive: isVerified
       };
 
       if (formData.password && formData.password.trim()) {
