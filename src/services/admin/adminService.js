@@ -442,7 +442,6 @@ function normalizeAgent(agent) {
     verificationStatus: rawStatus.toUpperCase(),
     isActive: agent.isActive !== undefined ? Boolean(agent.isActive) : isVerified,
     joinedDate: agent.createdAt ? agent.createdAt.split('T')[0] : (agent.joinedDate || ''),
-    password: agent.password || '',
     quotesCount: agent.quotesCount || 0,
     avatar: agent.avatar || ''
   };
@@ -457,10 +456,7 @@ export function getStoredAgents() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map(agent => ({
-          ...normalizeAgent(agent),
-          password: agent.password || ''
-        }));
+        return parsed.map(agent => normalizeAgent(agent));
       }
     }
   } catch (err) {
@@ -519,7 +515,6 @@ export async function addAgent(agentData) {
       const res = await api.post('/agents', payload);
       if (res.data) {
         const newAgent = normalizeAgent(res.data);
-        newAgent.password = agentData.password || 'Agent1234!';
         const allAgents = await fetchAgents();
         return { success: true, agent: newAgent, allAgents };
       }
@@ -534,7 +529,6 @@ export async function addAgent(agentData) {
       name: agentData.name?.trim() || agentData.fullName?.trim() || 'New Agent',
       fullName: agentData.name?.trim() || agentData.fullName?.trim() || 'New Agent',
       email: agentData.email?.trim() || '',
-      password: agentData.password?.trim() || 'Agent1234!',
       phone: agentData.phone?.trim() || '',
       licenseId: agentData.licenseId?.trim() || 'PENDING',
       territory: agentData.territory?.trim() || 'Southern California',
@@ -604,7 +598,6 @@ export async function updateAgent(agentId, updates) {
       const res = await api.patch(`/agents/${agentId}`, payload);
       if (res.data) {
         const updatedAgent = normalizeAgent(res.data);
-        if (updates.password) updatedAgent.password = updates.password;
         const allAgents = await fetchAgents();
         return { success: true, agent: updatedAgent, allAgents };
       }
