@@ -14,7 +14,10 @@ export default function AddServicePackageModal({
   lang = 'en'
 }) {
   const [packageName, setPackageName] = useState('');
+  const [packageName_es, setPackageName_es] = useState('');
   const [category, setCategory] = useState('Traditional');
+  const [category_es, setCategory_es] = useState('');
+  const [displayOrder, setDisplayOrder] = useState('1');
 
   // Itemized Services Breakdown state
   const [arrangements, setArrangements] = useState('2050');
@@ -22,6 +25,7 @@ export default function AddServicePackageModal({
   const [embalming, setEmbalming] = useState('525');
   const [otherPreparation, setOtherPreparation] = useState('200');
   const [visitation, setVisitation] = useState('300');
+  const [visitationHours, setVisitationHours] = useState('3');
   const [funeralService, setFuneralService] = useState('150');
   const [eveningService, setEveningService] = useState('0');
   const [familyCar, setFamilyCar] = useState('0');
@@ -30,9 +34,9 @@ export default function AddServicePackageModal({
 
   // Exactly 3 custom 'Other Services' rows
   const [otherServices, setOtherServices] = useState([
-    { name: '', price: '' },
-    { name: '', price: '' },
-    { name: '', price: '' }
+    { name: '', customName_es: '', price: '' },
+    { name: '', customName_es: '', price: '' },
+    { name: '', customName_es: '', price: '' }
   ]);
 
   const [packageSavings, setPackageSavings] = useState('1000');
@@ -56,7 +60,9 @@ export default function AddServicePackageModal({
     if (isOpen) {
       if (editingPackage) {
         setPackageName(editingPackage.packageName || editingPackage.name || editingPackage.serviceLabel || '');
+        setPackageName_es(editingPackage.packageName_es || editingPackage.name_es || '');
         setCategory(editingPackage.category || 'Traditional');
+        setCategory_es(editingPackage.category_es || '');
 
         const itemized = editingPackage.itemizedServices;
         if (itemized && Object.keys(itemized).length > 0) {
@@ -76,14 +82,17 @@ export default function AddServicePackageModal({
           setOtherServices([
             {
               name: rawOthers[0]?.name || '',
+              customName_es: rawOthers[0]?.customName_es || rawOthers[0]?.name_es || '',
               price: rawOthers[0]?.price !== undefined && rawOthers[0]?.price !== null ? String(rawOthers[0].price) : ''
             },
             {
               name: rawOthers[1]?.name || '',
+              customName_es: rawOthers[1]?.customName_es || rawOthers[1]?.name_es || '',
               price: rawOthers[1]?.price !== undefined && rawOthers[1]?.price !== null ? String(rawOthers[1].price) : ''
             },
             {
               name: rawOthers[2]?.name || '',
+              customName_es: rawOthers[2]?.customName_es || rawOthers[2]?.name_es || '',
               price: rawOthers[2]?.price !== undefined && rawOthers[2]?.price !== null ? String(rawOthers[2].price) : ''
             }
           ]);
@@ -104,9 +113,9 @@ export default function AddServicePackageModal({
           setUtilityVehicles('0');
           setPackageSavings('0');
           setOtherServices([
-            { name: '', price: '' },
-            { name: '', price: '' },
-            { name: '', price: '' }
+            { name: '', customName_es: '', price: '' },
+            { name: '', customName_es: '', price: '' },
+            { name: '', customName_es: '', price: '' }
           ]);
         }
 
@@ -114,10 +123,15 @@ export default function AddServicePackageModal({
           ? editingPackage.section2Price
           : (editingPackage.s2 ?? 0);
         setSection2Price(String(s2));
+        setVisitationHours(String(editingPackage.visitationHours ?? '3'));
+        setDisplayOrder(String(editingPackage.displayOrder !== undefined && editingPackage.displayOrder !== null ? editingPackage.displayOrder : '1'));
       } else {
         // Reset to default new package baseline
         setPackageName('');
+        setPackageName_es('');
         setCategory('Traditional');
+        setCategory_es('');
+        setDisplayOrder('1');
         setArrangements('2050');
         setTransfer('695');
         setEmbalming('525');
@@ -129,12 +143,13 @@ export default function AddServicePackageModal({
         setFuneralCoach('375');
         setUtilityVehicles('100');
         setOtherServices([
-          { name: '', price: '' },
-          { name: '', price: '' },
-          { name: '', price: '' }
+          { name: '', customName_es: '', price: '' },
+          { name: '', customName_es: '', price: '' },
+          { name: '', customName_es: '', price: '' }
         ]);
         setPackageSavings('1000');
         setSection2Price('0');
+        setVisitationHours('3');
       }
       setError('');
     }
@@ -142,26 +157,40 @@ export default function AddServicePackageModal({
 
   if (!isOpen) return null;
 
-  // Numerical values
-  const numArrangements = Math.max(0, Number(arrangements) || 0);
-  const numTransfer = Math.max(0, Number(transfer) || 0);
-  const numEmbalming = Math.max(0, Number(embalming) || 0);
-  const numOtherPreparation = Math.max(0, Number(otherPreparation) || 0);
-  const numVisitation = Math.max(0, Number(visitation) || 0);
-  const numFuneralService = Math.max(0, Number(funeralService) || 0);
-  const numEveningService = Math.max(0, Number(eveningService) || 0);
-  const numFamilyCar = Math.max(0, Number(familyCar) || 0);
-  const numFuneralCoach = Math.max(0, Number(funeralCoach) || 0);
-  const numUtilityVehicles = Math.max(0, Number(utilityVehicles) || 0);
-  const numPackageSavings = Math.max(0, Number(packageSavings) || 0);
-  const numSection2 = Math.max(0, Number(section2Price) || 0);
+  const isDuplicate = Boolean(editingPackage?.isDuplicate);
+  const isEditing = Boolean(editingPackage && !isDuplicate);
+
+  // Helper for numeric aggregation: ignore non-numeric strings (e.g. "incl", "n/a") as 0
+  const parseNum = (val) => {
+    if (val === undefined || val === null) return 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : Math.max(0, val);
+    const cleaned = String(val).replace(/[\$,]/g, '').trim();
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : Math.max(0, parsed);
+  };
+
+  // Numerical values for aggregation & subtotals
+  const numArrangements = parseNum(arrangements);
+  const numTransfer = parseNum(transfer);
+  const numEmbalming = parseNum(embalming);
+  const numOtherPreparation = parseNum(otherPreparation);
+  const numVisitation = parseNum(visitation);
+  const numFuneralService = parseNum(funeralService);
+  const numEveningService = parseNum(eveningService);
+  const numFamilyCar = parseNum(familyCar);
+  const numFuneralCoach = parseNum(funeralCoach);
+  const numUtilityVehicles = parseNum(utilityVehicles);
+  const numPackageSavings = parseNum(packageSavings);
+  const numSection2 = parseNum(section2Price);
 
   // Custom 3 other services formatted
   const otherServicesFormatted = otherServices.map((o) => ({
     name: (o.name || '').trim(),
-    price: Math.max(0, Number(o.price) || 0)
+    customName_es: (o.customName_es || o.name_es || '').trim(),
+    name_es: (o.customName_es || o.name_es || '').trim(),
+    price: String(o.price ?? '').trim()
   }));
-  const totalOtherServices = otherServicesFormatted.reduce((acc, o) => acc + o.price, 0);
+  const totalOtherServices = otherServicesFormatted.reduce((acc, o) => acc + parseNum(o.price), 0);
 
   // Dynamic calculations
   const grossServices =
@@ -189,28 +218,38 @@ export default function AddServicePackageModal({
       return;
     }
 
+    if (!displayOrder || isNaN(parseInt(displayOrder, 10))) {
+      setError(lang === 'es' ? 'El orden de visualización es obligatorio y debe ser un número.' : 'Display Order is required and must be a valid number.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload = {
-        packageId: editingPackage ? (editingPackage._id || editingPackage.id || editingPackage.serviceId) : undefined,
+        packageId: isEditing ? (editingPackage._id || editingPackage.id || editingPackage.serviceId) : undefined,
         packageName: packageName.trim(),
+        packageName_es: (packageName_es || '').trim(),
+        name_es: (packageName_es || '').trim(),
         category,
+        category_es: (category_es || '').trim(),
+        displayOrder: Math.max(0, parseInt(displayOrder, 10) || 0),
         itemizedServices: {
-          arrangements: numArrangements,
-          transfer: numTransfer,
-          embalming: numEmbalming,
-          otherPreparation: numOtherPreparation,
-          visitation: numVisitation,
-          funeralService: numFuneralService,
-          eveningService: numEveningService,
-          familyCar: numFamilyCar,
-          funeralCoach: numFuneralCoach,
-          utilityVehicles: numUtilityVehicles,
+          arrangements: String(arrangements ?? '').trim() || '0',
+          transfer: String(transfer ?? '').trim() || '0',
+          embalming: String(embalming ?? '').trim() || '0',
+          otherPreparation: String(otherPreparation ?? '').trim() || '0',
+          visitation: String(visitation ?? '').trim() || '0',
+          funeralService: String(funeralService ?? '').trim() || '0',
+          eveningService: String(eveningService ?? '').trim() || '0',
+          familyCar: String(familyCar ?? '').trim() || '0',
+          funeralCoach: String(funeralCoach ?? '').trim() || '0',
+          utilityVehicles: String(utilityVehicles ?? '').trim() || '0',
           otherServices: otherServicesFormatted,
-          packageSavings: numPackageSavings,
+          packageSavings: String(packageSavings ?? '').trim() || '0',
         },
         section1Price: totalSection1,
         section2Price: numSection2,
+        visitationHours: Math.max(0, Number(visitationHours) || 3),
         homeId: locationId
       };
 
@@ -237,12 +276,12 @@ export default function AddServicePackageModal({
         <div className="modal-header">
           <div className="modal-title-group">
             <h2 className="modal-title">
-              {editingPackage
+              {isEditing
                 ? (lang === 'es' ? '✏️ Editar Paquete de Servicios Funerarios' : '✏️ Edit Funeral Service Package')
                 : (lang === 'es' ? '📋 Agregar Paquete de Servicios Funerarios' : '📋 Add Funeral Service Package')}
             </h2>
             <p className="modal-subtitle">
-              {editingPackage
+              {isEditing
                 ? (lang === 'es'
                     ? `Editar desglose y tarifas de Sección I para: ${locationName}`
                     : `Edit Itemized Section I Breakdown & Rates for: ${locationName}`)
@@ -265,8 +304,8 @@ export default function AddServicePackageModal({
         <form onSubmit={handleSubmit} style={{ overflowY: 'auto', padding: '20px 24px', flex: 1 }}>
           {error && <div className="modal-alert-error" style={{ marginBottom: 16 }}>⚠️ {error}</div>}
 
-          {/* Top Inputs: Package Name & Category */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '14px', marginBottom: 18 }}>
+          {/* Top Inputs: Package Name, Category & Display Order */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 110px', gap: '14px', marginBottom: 12 }}>
             <InputField
               label={lang === 'es' ? 'Nombre del Paquete' : 'Package Name'}
               placeholder={lang === 'es' ? 'ej. One-Day Service Funeral' : 'e.g. One-Day Service Funeral'}
@@ -285,6 +324,36 @@ export default function AddServicePackageModal({
                 ['Cremation', lang === 'es' ? 'Cremación (Cremation)' : 'Cremation'],
                 ['Ship-Out', lang === 'es' ? 'Traslado (Ship-Out)' : 'Ship-Out']
               ]}
+            />
+
+            <InputField
+              label={lang === 'es' ? 'Orden' : 'Display Order'}
+              type="number"
+              min="0"
+              placeholder="1"
+              value={displayOrder}
+              onChange={(e) => setDisplayOrder(e.target.value)}
+              required
+              hint={lang === 'es' ? 'ej. 1, 2, 3' : 'e.g. 1, 2, 3'}
+            />
+          </div>
+
+          {/* Optional Spanish Localization Inputs */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '14px', marginBottom: 18 }}>
+            <InputField
+              label={lang === 'es' ? 'Nombre del Paquete (Español)' : 'Package Name (Spanish)'}
+              placeholder={lang === 'es' ? 'ej. Servicio Funerario de Un Día' : 'e.g. One-Day Service Funeral (ES)'}
+              value={packageName_es}
+              onChange={(e) => setPackageName_es(e.target.value)}
+              hint={lang === 'es' ? 'Opcional — traducción visible para agentes y clientes en español' : 'Optional — visible when language is set to Spanish'}
+            />
+
+            <InputField
+              label={lang === 'es' ? 'Categoría (Español)' : 'Category (Spanish)'}
+              placeholder={lang === 'es' ? 'ej. Tradicional' : 'e.g. Tradicional'}
+              value={category_es}
+              onChange={(e) => setCategory_es(e.target.value)}
+              hint={lang === 'es' ? 'Opcional' : 'Optional'}
             />
           </div>
 
@@ -319,9 +388,7 @@ export default function AddServicePackageModal({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px 16px' }}>
               <InputField
                 label={lang === 'es' ? 'Arreglos y personal profesional ($)' : 'Arrangements and professional staff ($)'}
-                type="number"
-                min="0"
-                step="1"
+                type="text"
                 placeholder="2050"
                 value={arrangements}
                 onChange={(e) => setArrangements(e.target.value)}
@@ -329,9 +396,7 @@ export default function AddServicePackageModal({
 
               <InputField
                 label={lang === 'es' ? 'Traslado (25 millas) ($)' : 'Transfer (25 miles) ($)'}
-                type="number"
-                min="0"
-                step="1"
+                type="text"
                 placeholder="695"
                 value={transfer}
                 onChange={(e) => setTransfer(e.target.value)}
@@ -339,9 +404,7 @@ export default function AddServicePackageModal({
 
               <InputField
                 label={lang === 'es' ? 'Embalsamamiento / refrigeración ($)' : 'Embalming / refrigeration ($)'}
-                type="number"
-                min="0"
-                step="1"
+                type="text"
                 placeholder="525"
                 value={embalming}
                 onChange={(e) => setEmbalming(e.target.value)}
@@ -349,29 +412,36 @@ export default function AddServicePackageModal({
 
               <InputField
                 label={lang === 'es' ? 'Otra preparación ($)' : 'Other preparation ($)'}
-                type="number"
-                min="0"
-                step="1"
+                type="text"
                 placeholder="200"
                 value={otherPreparation}
                 onChange={(e) => setOtherPreparation(e.target.value)}
               />
 
-              <InputField
-                label={lang === 'es' ? 'Velación (3 horas) ($)' : 'Visitation (3 hours) ($)'}
-                type="number"
-                min="0"
-                step="1"
-                placeholder="300"
-                value={visitation}
-                onChange={(e) => setVisitation(e.target.value)}
-              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px', gap: '12px', alignItems: 'flex-start' }}>
+                <InputField
+                  label={lang === 'es' ? `Velación (${visitationHours || 3}h) ($)` : `Visitation (${visitationHours || 3}h) ($)`}
+                  type="text"
+                  placeholder="300"
+                  value={visitation}
+                  onChange={(e) => setVisitation(e.target.value)}
+                />
+
+                <InputField
+                  label={lang === 'es' ? 'Horas' : 'Hours'}
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="3"
+                  value={visitationHours}
+                  onChange={(e) => setVisitationHours(e.target.value)}
+                  hint={lang === 'es' ? 'Duración' : 'Duration'}
+                />
+              </div>
 
               <InputField
                 label={lang === 'es' ? 'Servicio funerario / memorial ($)' : 'Funeral/memorial service ($)'}
-                type="number"
-                min="0"
-                step="1"
+                type="text"
                 placeholder="150"
                 value={funeralService}
                 onChange={(e) => setFuneralService(e.target.value)}
@@ -380,9 +450,7 @@ export default function AddServicePackageModal({
               {/* NEW: Evening Service */}
               <InputField
                 label={lang === 'es' ? 'Servicio nocturno ($)' : 'Evening Service ($)'}
-                type="number"
-                min="0"
-                step="1"
+                type="text"
                 placeholder="0"
                 value={eveningService}
                 onChange={(e) => setEveningService(e.target.value)}
@@ -391,9 +459,7 @@ export default function AddServicePackageModal({
               {/* NEW: Family Car */}
               <InputField
                 label={lang === 'es' ? 'Auto familiar ($)' : 'Family car ($)'}
-                type="number"
-                min="0"
-                step="1"
+                type="text"
                 placeholder="0"
                 value={familyCar}
                 onChange={(e) => setFamilyCar(e.target.value)}
@@ -401,9 +467,7 @@ export default function AddServicePackageModal({
 
               <InputField
                 label={lang === 'es' ? 'Carroza funeraria ($)' : 'Funeral coach ($)'}
-                type="number"
-                min="0"
-                step="1"
+                type="text"
                 placeholder="375"
                 value={funeralCoach}
                 onChange={(e) => setFuneralCoach(e.target.value)}
@@ -412,9 +476,7 @@ export default function AddServicePackageModal({
               {/* Dedicated Utility Vehicles */}
               <InputField
                 label={lang === 'es' ? 'Vehículos utilitarios ($)' : 'Utility Vehicles ($)'}
-                type="number"
-                min="0"
-                step="1"
+                type="text"
                 placeholder="100"
                 value={utilityVehicles}
                 onChange={(e) => setUtilityVehicles(e.target.value)}
@@ -472,8 +534,8 @@ export default function AddServicePackageModal({
                   key={idx}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 2fr) minmax(130px, 1fr)',
-                    gap: '12px',
+                    gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(110px, 0.8fr)',
+                    gap: '10px',
                     alignItems: 'end',
                     backgroundColor: '#ffffff',
                     padding: '10px 12px',
@@ -484,7 +546,7 @@ export default function AddServicePackageModal({
                   <InputField
                     label={
                       lang === 'es'
-                        ? `Nombre de Servicio #${idx + 1}`
+                        ? `Nombre #${idx + 1}`
                         : `Service Name #${idx + 1}`
                     }
                     placeholder={
@@ -492,7 +554,7 @@ export default function AddServicePackageModal({
                         ? (lang === 'es' ? 'ej. Escolta de limusina' : 'e.g. Limousine Escort')
                         : idx === 1
                         ? (lang === 'es' ? 'ej. Auto de flores' : 'e.g. Flower Car')
-                        : (lang === 'es' ? 'ej. Servicio conmemorativo adicional' : 'e.g. Additional Memorial Service')
+                        : (lang === 'es' ? 'ej. Servicio memorial extra' : 'e.g. Additional Memorial Service')
                     }
                     value={otherServices[idx].name}
                     onChange={(e) => handleOtherServiceChange(idx, 'name', e.target.value)}
@@ -502,12 +564,28 @@ export default function AddServicePackageModal({
                   <InputField
                     label={
                       lang === 'es'
+                        ? `Nombre en Español #${idx + 1}`
+                        : `Spanish Name #${idx + 1}`
+                    }
+                    placeholder={
+                      idx === 0
+                        ? (lang === 'es' ? 'ej. Escolta de limusina' : 'e.g. Escolta de limusina')
+                        : idx === 1
+                        ? (lang === 'es' ? 'ej. Auto de flores' : 'e.g. Auto de flores')
+                        : (lang === 'es' ? 'ej. Servicio memorial extra' : 'e.g. Servicio memorial extra')
+                    }
+                    value={otherServices[idx].customName_es || ''}
+                    onChange={(e) => handleOtherServiceChange(idx, 'customName_es', e.target.value)}
+                    style={{ marginBottom: 0 }}
+                  />
+
+                  <InputField
+                    label={
+                      lang === 'es'
                         ? `Precio ($)`
                         : `Price ($)`
                     }
-                    type="number"
-                    min="0"
-                    step="1"
+                    type="text"
                     placeholder="0"
                     value={otherServices[idx].price}
                     onChange={(e) => handleOtherServiceChange(idx, 'price', e.target.value)}
@@ -530,9 +608,7 @@ export default function AddServicePackageModal({
           >
             <InputField
               label={lang === 'es' ? '📉 Descuento / Ahorro del Paquete ($) — Se resta de Sección 1' : '📉 Package Savings ($) — Subtracted from Section 1'}
-              type="number"
-              min="0"
-              step="1"
+              type="text"
               placeholder="1000"
               value={packageSavings}
               onChange={(e) => setPackageSavings(e.target.value)}
@@ -544,9 +620,7 @@ export default function AddServicePackageModal({
           <div style={{ marginBottom: 18 }}>
             <InputField
               label={lang === 'es' ? 'Sección II: Instalaciones y Automotores ($)' : 'Section II: Facilities & Automotive ($)'}
-              type="number"
-              min="0"
-              step="1"
+              type="text"
               placeholder="0"
               value={section2Price}
               onChange={(e) => setSection2Price(e.target.value)}

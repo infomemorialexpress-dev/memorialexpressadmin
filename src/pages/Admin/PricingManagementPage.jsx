@@ -397,6 +397,14 @@ export default function PricingManagementPage() {
                 setEditingPackage(pkg);
                 setIsAddPackageModalOpen(true);
               }}
+              onDuplicatePackage={(pkg) => {
+                setEditingPackage({
+                  ...pkg,
+                  isDuplicate: true,
+                  packageName: pkg.packageName ? `${pkg.packageName} (Copy)` : (pkg.name ? `${pkg.name} (Copy)` : '')
+                });
+                setIsAddPackageModalOpen(true);
+              }}
               onDeletePackage={(packageId, packageName) => {
                 setDeleteTarget({ type: 'package', id: packageId, name: packageName });
               }}

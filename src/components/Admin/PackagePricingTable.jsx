@@ -8,6 +8,7 @@ export default function PackagePricingTable({
   isLoadingServices = false,
   onPackageChange,
   onEditPackage,
+  onDuplicatePackage,
   onDeletePackage,
   lang = 'en'
 }) {
@@ -70,29 +71,38 @@ export default function PackagePricingTable({
     );
   };
 
-  const rows = (serviceItems || []).map((item) => {
-    const serviceId = item._id || item.id;
-    const serviceLabel = item.packageName || item.name || 'Funeral Service Package';
-    const category = item.category || 'Traditional';
-    const packageKey = `${homeId}|${serviceId}`;
-    const pkg = packages[packageKey] || {};
+  const rows = (serviceItems || [])
+    .map((item) => {
+      const serviceId = item._id || item.id;
+      const serviceLabel = item.packageName || item.name || 'Funeral Service Package';
+      const category = item.category || 'Traditional';
+      const displayOrder = item.displayOrder !== undefined && item.displayOrder !== null ? Number(item.displayOrder) : 0;
+      const packageKey = `${homeId}|${serviceId}`;
+      const pkg = packages[packageKey] || {};
 
-    const s1 = Number(pkg.section1 !== undefined ? pkg.section1 : (item.section1Price ?? 0)) || 0;
-    const s2 = Number(pkg.section2 !== undefined ? pkg.section2 : (item.section2Price ?? 0)) || 0;
-    const total = s1 + s2;
+      const s1 = Number(pkg.section1 !== undefined ? pkg.section1 : (item.section1Price ?? 0)) || 0;
+      const s2 = Number(pkg.section2 !== undefined ? pkg.section2 : (item.section2Price ?? 0)) || 0;
+      const total = s1 + s2;
 
-    return {
-      serviceId,
-      serviceLabel,
-      category,
-      rawItem: item,
-      s1,
-      s2,
-      total,
-      packageKey,
-      isCustom: Boolean(item.isCustom)
-    };
-  });
+      return {
+        serviceId,
+        serviceLabel,
+        category,
+        displayOrder,
+        rawItem: item,
+        s1,
+        s2,
+        total,
+        packageKey,
+        isCustom: Boolean(item.isCustom)
+      };
+    })
+    .sort((a, b) => {
+      const orderA = a.displayOrder !== undefined && a.displayOrder !== null ? Number(a.displayOrder) : 0;
+      const orderB = b.displayOrder !== undefined && b.displayOrder !== null ? Number(b.displayOrder) : 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return (a.serviceLabel || '').localeCompare(b.serviceLabel || '');
+    });
 
   return (
     <div className="table-responsive-wrapper">
@@ -105,6 +115,7 @@ export default function PackagePricingTable({
       <table className="admin-data-grid">
         <thead>
           <tr>
+            <th style={{ width: 65, textAlign: 'center' }}>{lang === 'es' ? 'Orden' : 'Order'}</th>
             <th>{lang === 'es' ? 'Paquete de Servicio Funerario' : 'Funeral Service Package'}</th>
             <th style={{ width: 140 }}>{lang === 'es' ? 'Categoría' : 'Category'}</th>
             <th style={{ width: 160 }}>
@@ -116,7 +127,7 @@ export default function PackagePricingTable({
             <th style={{ width: 150, textAlign: 'right' }}>
               {lang === 'es' ? 'Tarifa Total Base' : 'Total Package Rate'}
             </th>
-            <th style={{ width: 100, textAlign: 'center' }}>
+            <th style={{ width: 130, textAlign: 'center' }}>
               {lang === 'es' ? 'Acción' : 'Action'}
             </th>
           </tr>
@@ -124,7 +135,7 @@ export default function PackagePricingTable({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={6} style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b', fontSize: '14px' }}>
+              <td colSpan={7} style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b', fontSize: '14px' }}>
                 {lang === 'es'
                   ? 'No hay paquetes de servicios funerarios configurados en la base de datos para esta funeraria. Haga clic en "+ Agregar Artículo a esta Sede" para crear uno.'
                   : 'No funeral service packages configured in the database for this location yet. Click "+ Add Item to this Location" above to create one.'}
@@ -136,6 +147,22 @@ export default function PackagePricingTable({
 
               return (
                 <tr key={serviceId}>
+                  <td style={{ textAlign: 'center' }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        backgroundColor: '#f1f5f9',
+                        color: '#1e293b',
+                        border: '1px solid #cbd5e1',
+                      }}
+                    >
+                      {row.displayOrder || '0'}
+                    </span>
+                  </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ fontWeight: 650, color: '#183655' }}>
@@ -174,6 +201,31 @@ export default function PackagePricingTable({
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+                      <button
+                        type="button"
+                        className="duplicate-icon-btn"
+                        onClick={() => {
+                          if (onDuplicatePackage) {
+                            onDuplicatePackage(row.rawItem ? { ...row.rawItem, ...row } : row);
+                          }
+                        }}
+                        title={lang === 'es' ? 'Duplicar paquete' : 'Duplicate package'}
+                        style={{
+                          background: '#f8fafc',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: 6,
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          color: '#475569',
+                          transition: 'all 0.15s ease',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        📋
+                      </button>
                       <button
                         type="button"
                         className="edit-icon-btn"

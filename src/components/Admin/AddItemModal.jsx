@@ -25,6 +25,7 @@ export default function AddItemModal({
   lang = 'en'
 }) {
   const [name, setName] = useState('');
+  const [itemName_es, setItemName_es] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState(defaultCategory);
   const [description, setDescription] = useState('');
@@ -66,6 +67,7 @@ export default function AddItemModal({
       setCategory(defaultCategory);
       setAssignedFuneralHomeId(locationId || '');
       setName('');
+      setItemName_es('');
       setPrice('');
       setDescription('');
       setImage('');
@@ -153,6 +155,8 @@ export default function AddItemModal({
     setIsSubmitting(true);
     const success = await onAddItem({
       name,
+      itemName_es: itemName_es.trim(),
+      name_es: itemName_es.trim(),
       price: resolvedPrice,
       category,
       homeId: assignedFuneralHomeId || locationId,
@@ -502,6 +506,16 @@ export default function AddItemModal({
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
+          />
+
+          <InputField
+            label={category === 'casket'
+              ? (lang === 'es' ? 'Nombre del Ataúd (Español)' : 'Casket Name (Spanish)')
+              : (lang === 'es' ? 'Nombre del Adicional (Español)' : 'Add-on Name (Spanish)')}
+            placeholder={category === 'casket' ? 'e.g. Roble Real' : 'e.g. Servicio de Limusina Profesional'}
+            value={itemName_es}
+            onChange={(e) => setItemName_es(e.target.value)}
+            hint={lang === 'es' ? 'Opcional — traducción visible para agentes y cotizaciones en español' : 'Optional — visible when language is set to Spanish'}
           />
 
           {category === 'casket' && (

@@ -68,14 +68,13 @@ export default function AgentsManagement() {
     const q = searchQuery.toLowerCase().trim();
     const nameMatch = (agent.fullName || agent.name || '').toLowerCase().includes(q);
     const emailMatch = (agent.email || '').toLowerCase().includes(q);
-    const licenseMatch = (agent.licenseId || '').toLowerCase().includes(q);
+    const codeMatch = (agent.agentCode || agent.licenseId || '').toLowerCase().includes(q);
     const agentNumberMatch = (agent.agentNumber || '').toLowerCase().includes(q);
     const uplineMatch = (agent.uplineName || '').toLowerCase().includes(q);
-    const territoryMatch = (agent.territory || '').toLowerCase().includes(q);
     const homeName = (typeof agent.assignedHome === 'object' ? agent.assignedHome?.name : agent.assignedHome) || '';
     const homeMatch = homeName.toLowerCase().includes(q);
 
-    return nameMatch || emailMatch || licenseMatch || agentNumberMatch || uplineMatch || territoryMatch || homeMatch;
+    return nameMatch || emailMatch || codeMatch || agentNumberMatch || uplineMatch || homeMatch;
   });
 
   const handleOpenRegisterModal = () => {
@@ -190,8 +189,8 @@ export default function AgentsManagement() {
             className="agents-search-input"
             placeholder={
               lang === 'es'
-                ? 'Buscar agentes por nombre, correo, licencia o territorio...'
-                : 'Search agents by name, email, license ID, or territory...'
+                ? 'Buscar agentes por nombre, correo, código de agente o upline...'
+                : 'Search agents by name, email, agent code, or upline...'
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -215,7 +214,7 @@ export default function AgentsManagement() {
               <tr>
                 <th>{lang === 'es' ? 'Agente de Ventas' : 'Sales Representative'}</th>
                 <th>{lang === 'es' ? 'Información de Contacto' : 'Contact Information'}</th>
-                <th>{lang === 'es' ? 'Licencia y Territorio' : 'License & Territory'}</th>
+                <th>{lang === 'es' ? 'Código de Agente y Upline' : "Agent Code & Upline's Name"}</th>
                 <th>{lang === 'es' ? 'Ubicación Asignada' : 'Assigned Location'}</th>
                 <th style={{ minWidth: 160 }}>{lang === 'es' ? 'Estado de Verificación' : 'Verification Status'}</th>
                 <th style={{ width: 100, textAlign: 'center' }}>{lang === 'es' ? 'Acciones' : 'Actions'}</th>
@@ -280,24 +279,20 @@ export default function AgentsManagement() {
                         </div>
                       </td>
 
-                      {/* License & Territory */}
+                      {/* Agent Code & Upline's Name */}
                       <td>
                         <div>
                           <div className="agent-license-id">
-                            <span>🆔</span> {agent.licenseId || 'CA-FD-98421'}
+                            <span>🆔</span> {agent.agentCode || agent.licenseId || 'CA-FD-98421'}
                             {agent.agentNumber && (
                               <span style={{ marginLeft: '6px', fontSize: '11px', background: '#e0e7ff', color: '#4338ca', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
                                 #{agent.agentNumber}
                               </span>
                             )}
                           </div>
-                          {agent.uplineName && (
-                            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                              <span>⬆️ {lang === 'es' ? 'Upline: ' : 'Upline: '}</span>{agent.uplineName}
-                            </div>
-                          )}
-                          <div className="agent-territory">
-                            <span>📍</span> {agent.territory || 'Southern California'}
+                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                            <span style={{ fontWeight: 600, color: '#475569' }}>⬆️ {lang === 'es' ? 'Upline: ' : "Upline: "}</span>
+                            <span>{agent.uplineName || (lang === 'es' ? 'No asignado' : 'Not assigned')}</span>
                           </div>
                         </div>
                       </td>

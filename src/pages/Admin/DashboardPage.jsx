@@ -330,7 +330,7 @@ export default function DashboardPage() {
                   <div className="agent-quick-details">
                     <div className="agent-quick-name">{agentName}</div>
                     <div className="agent-quick-meta">
-                      {agent.email} • ID: {agent.licenseId || 'N/A'}
+                      {agent.email} • Code: {agent.agentCode || agent.licenseId || 'N/A'}
                     </div>
                   </div>
                   <div className="agent-quick-status">

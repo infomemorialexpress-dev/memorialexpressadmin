@@ -23,6 +23,7 @@ export default function EditItemModal({
   lang = 'en'
 }) {
   const [name, setName] = useState('');
+  const [itemName_es, setItemName_es] = useState('');
   const [price, setPrice] = useState('');
   const [specifications, setSpecifications] = useState('');
   const [image, setImage] = useState('');
@@ -57,6 +58,7 @@ export default function EditItemModal({
   useEffect(() => {
     if (item) {
       setName(item.name || '');
+      setItemName_es(item.itemName_es || item.name_es || '');
       setPrice(item.price !== undefined ? item.price : (item.listPrice !== undefined ? item.listPrice : ''));
       setSpecifications(item.specifications || item.description || '');
       setImage(item.imageUrl || item.image || '');
@@ -165,6 +167,8 @@ export default function EditItemModal({
       const updatedData = {
         id: item.id || item._id,
         name: name.trim(),
+        itemName_es: itemName_es.trim(),
+        name_es: itemName_es.trim(),
         price: resolvedPrice,
         specifications: specifications.trim(),
         description: specifications.trim(),
@@ -256,6 +260,18 @@ export default function EditItemModal({
               disabled={!isCasket && hasDestinations}
               hint={(!isCasket && hasDestinations) ? (lang === 'es' ? 'Determinado por los destinos abajo' : 'Determined by the destinations below') : ''}
               required={isCasket || !hasDestinations}
+            />
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <InputField
+              label={isCasket
+                ? (lang === 'es' ? 'Nombre del Ataúd (Español)' : 'Casket Name (Spanish)')
+                : (lang === 'es' ? 'Nombre del Adicional (Español)' : 'Add-on Name (Spanish)')}
+              placeholder={isCasket ? 'e.g. Roble Real' : 'e.g. Servicio de Limusina'}
+              value={itemName_es}
+              onChange={(e) => setItemName_es(e.target.value)}
+              hint={lang === 'es' ? 'Opcional — traducción visible para agentes y cotizaciones en español' : 'Optional — visible when language is set to Spanish'}
             />
           </div>
 

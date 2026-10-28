@@ -17,6 +17,16 @@ export {
 
 // Cash formatting
 export function formatMoney(amount) {
+  if (typeof amount === 'string') {
+    const trimmed = amount.trim();
+    const cleaned = trimmed.replace(/[\$,]/g, '');
+    if (isNaN(Number(cleaned)) || cleaned === '') {
+      if (trimmed.toLowerCase() === 'incl' || trimmed.toLowerCase() === 'included') {
+        return '$ incl';
+      }
+      return trimmed.startsWith('$') ? trimmed : `$ ${trimmed}`;
+    }
+  }
   const num = Number(amount) || 0;
   return '$' + num.toLocaleString('en-US', {
     minimumFractionDigits: num % 1 === 0 ? 0 : 2,

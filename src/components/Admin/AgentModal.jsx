@@ -15,8 +15,7 @@ export default function AgentModal({
     email: '',
     password: '',
     phone: '',
-    licenseId: '',
-    territory: '',
+    agentCode: '',
     agentNumber: '',
     uplineName: '',
     assignedHome: '',
@@ -44,8 +43,7 @@ export default function AgentModal({
         email: initialData.email || '',
         password: '',
         phone: initialData.phone || '',
-        licenseId: initialData.licenseId || '',
-        territory: initialData.territory || '',
+        agentCode: initialData.agentCode || initialData.licenseId || '',
         agentNumber: initialData.agentNumber || '',
         uplineName: initialData.uplineName || '',
         assignedHome: homeIdVal,
@@ -59,8 +57,7 @@ export default function AgentModal({
         email: '',
         password: '',
         phone: '',
-        licenseId: '',
-        territory: '',
+        agentCode: '',
         agentNumber: '',
         uplineName: '',
         assignedHome: defaultHomeId,
@@ -139,8 +136,8 @@ export default function AgentModal({
         name: formData.fullName.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
-        licenseId: formData.licenseId.trim(),
-        territory: formData.territory.trim(),
+        agentCode: formData.agentCode.trim(),
+        licenseId: formData.agentCode.trim(), // backward compat
         assignedHomeId: targetHomeId,
         assignedHome: targetHomeId,
         agentNumber: formData.agentNumber.trim(),
@@ -309,7 +306,7 @@ export default function AgentModal({
               </div>
             </div>
 
-            {/* Row 3: Phone Number & Agent License ID */}
+            {/* Row 3: Phone Number & Agent Code */}
             <div className="agent-form-row-2">
               <div className="agent-form-group">
                 <label className="agent-form-label">
@@ -326,19 +323,19 @@ export default function AgentModal({
 
               <div className="agent-form-group">
                 <label className="agent-form-label">
-                  <span>{lang === 'es' ? 'Número de Licencia (ID)' : 'Agent License ID'}</span>
+                  <span>{lang === 'es' ? 'Código de Agente' : 'Agent Code'}</span>
                 </label>
                 <input
                   type="text"
                   className="agent-form-input"
                   placeholder="CA-FD-98421"
-                  value={formData.licenseId}
-                  onChange={(e) => handleChange('licenseId', e.target.value)}
+                  value={formData.agentCode}
+                  onChange={(e) => handleChange('agentCode', e.target.value)}
                 />
               </div>
             </div>
 
-            {/* Row 3.5: Agent Number & Upline's Name */}
+            {/* Row 4: Agent Number & Upline's Name */}
             <div className="agent-form-row-2">
               <div className="agent-form-group">
                 <label className="agent-form-label">
@@ -367,38 +364,23 @@ export default function AgentModal({
               </div>
             </div>
 
-            {/* Row 4: Territory / Region & Primary Assigned Home */}
-            <div className="agent-form-row-2">
-              <div className="agent-form-group">
-                <label className="agent-form-label">
-                  <span>{lang === 'es' ? 'Territorio / Región' : 'Territory / Region'}</span>
-                </label>
-                <input
-                  type="text"
-                  className="agent-form-input"
-                  placeholder="e.g. East Los Angeles & Montebello"
-                  value={formData.territory}
-                  onChange={(e) => handleChange('territory', e.target.value)}
-                />
-              </div>
-
-              <div className="agent-form-group">
-                <label className="agent-form-label">
-                  <span>{lang === 'es' ? 'Funeraria Asignada' : 'Primary Assigned Home'}</span>
-                </label>
-                <select
-                  className="agent-form-input"
-                  value={formData.assignedHome}
-                  onChange={(e) => handleChange('assignedHome', e.target.value)}
-                >
-                  <option value="">{lang === 'es' ? 'Todas las Funerarias (*)' : 'All Funeral Homes (*)'}</option>
-                  {funeralHomes.map((home) => (
-                    <option key={home._id || home.id} value={home._id || home.id}>
-                      {home.name} {home.city ? `(${home.city})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* Row 5: Primary Assigned Home */}
+            <div className="agent-form-group">
+              <label className="agent-form-label">
+                <span>{lang === 'es' ? 'Funeraria Asignada' : 'Primary Assigned Home'}</span>
+              </label>
+              <select
+                className="agent-form-input"
+                value={formData.assignedHome}
+                onChange={(e) => handleChange('assignedHome', e.target.value)}
+              >
+                <option value="">{lang === 'es' ? 'Todas las Funerarias (*)' : 'All Funeral Homes (*)'}</option>
+                {funeralHomes.map((home) => (
+                  <option key={home._id || home.id} value={home._id || home.id}>
+                    {home.name} {home.city ? `(${home.city})` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Row 5: Verification Status Radio Cards */}

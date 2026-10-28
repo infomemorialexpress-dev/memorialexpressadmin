@@ -431,8 +431,8 @@ function normalizeAgent(agent) {
     fullName: agent.fullName || agent.name || 'Sales Agent',
     email: agent.email,
     phone: agent.phone || '',
-    licenseId: agent.licenseId || '',
-    territory: agent.territory || '',
+    agentCode: agent.agentCode || agent.licenseId || '',
+    licenseId: agent.agentCode || agent.licenseId || '',
     agentNumber: agent.agentNumber || '',
     uplineName: agent.uplineName || '',
     assignedHome: agent.assignedHome?.name || (typeof agent.assignedHome === 'string' && !agent.assignedHome.match(/^[0-9a-fA-F]{24}$/) ? agent.assignedHome : '') || 'All Locations',
@@ -505,8 +505,9 @@ export async function addAgent(agentData) {
       email: agentData.email,
       password: agentData.password || 'Agent1234!',
       phone: agentData.phone || '',
-      licenseId: agentData.licenseId || '',
-      territory: agentData.territory || '',
+      agentCode: agentData.agentCode || agentData.licenseId || '',
+      agentNumber: agentData.agentNumber || '',
+      uplineName: agentData.uplineName || '',
       assignedHome: agentData.assignedHomeId || (typeof agentData.assignedHome === 'string' && agentData.assignedHome.match(/^[0-9a-fA-F]{24}$/) ? agentData.assignedHome : undefined),
       verificationStatus: (agentData.verificationStatus || agentData.status || 'PENDING').toUpperCase()
     };
@@ -530,8 +531,10 @@ export async function addAgent(agentData) {
       fullName: agentData.name?.trim() || agentData.fullName?.trim() || 'New Agent',
       email: agentData.email?.trim() || '',
       phone: agentData.phone?.trim() || '',
-      licenseId: agentData.licenseId?.trim() || 'PENDING',
-      territory: agentData.territory?.trim() || 'Southern California',
+      agentCode: agentData.agentCode?.trim() || agentData.licenseId?.trim() || 'PENDING',
+      licenseId: agentData.agentCode?.trim() || agentData.licenseId?.trim() || 'PENDING',
+      agentNumber: agentData.agentNumber?.trim() || '',
+      uplineName: agentData.uplineName?.trim() || '',
       assignedHome: agentData.assignedHome?.trim() || 'All Locations',
       status: (agentData.status || agentData.verificationStatus || 'pending').toLowerCase(),
       verificationStatus: (agentData.verificationStatus || agentData.status || 'PENDING').toUpperCase(),
@@ -564,11 +567,16 @@ export async function updateAgent(agentId, updates) {
     if (updates.phone !== undefined) {
       payload.phone = updates.phone.trim();
     }
-    if (updates.licenseId !== undefined) {
-      payload.licenseId = updates.licenseId.trim();
+    if (updates.agentCode !== undefined) {
+      payload.agentCode = updates.agentCode.trim();
+    } else if (updates.licenseId !== undefined) {
+      payload.agentCode = updates.licenseId.trim();
     }
-    if (updates.territory !== undefined) {
-      payload.territory = updates.territory.trim();
+    if (updates.agentNumber !== undefined) {
+      payload.agentNumber = updates.agentNumber.trim();
+    }
+    if (updates.uplineName !== undefined) {
+      payload.uplineName = updates.uplineName.trim();
     }
     if (updates.assignedHomeId !== undefined || updates.assignedHome !== undefined) {
       const homeVal = updates.assignedHomeId || updates.assignedHome;

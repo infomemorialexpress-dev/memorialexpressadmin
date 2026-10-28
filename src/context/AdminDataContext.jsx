@@ -123,9 +123,14 @@ export function AdminDataProvider({ children }) {
           if (existingIdx >= 0) {
             combined[existingIdx] = {
               ...combined[existingIdx],
+              packageName_es: hp.packageName_es || hp.name_es || combined[existingIdx].packageName_es || '',
+              name_es: hp.packageName_es || hp.name_es || combined[existingIdx].name_es || '',
+              category_es: hp.category_es || combined[existingIdx].category_es || '',
               section1Price: hp.section1Price !== undefined ? hp.section1Price : combined[existingIdx].section1Price,
               section2Price: hp.section2Price !== undefined ? hp.section2Price : combined[existingIdx].section2Price,
               itemizedServices: hp.itemizedServices || combined[existingIdx].itemizedServices,
+              visitationHours: hp.visitationHours !== undefined ? Number(hp.visitationHours) : (combined[existingIdx].visitationHours ?? 3),
+              displayOrder: hp.displayOrder !== undefined ? Number(hp.displayOrder) : (combined[existingIdx].displayOrder !== undefined ? Number(combined[existingIdx].displayOrder) : 0),
               isCustom: combined[existingIdx].isCustom || false,
             };
           } else {
@@ -134,15 +139,27 @@ export function AdminDataProvider({ children }) {
               id: hpId,
               name: hpName,
               packageName: hpName,
+              packageName_es: hp.packageName_es || hp.name_es || '',
+              name_es: hp.packageName_es || hp.name_es || '',
               category: hp.category || 'Traditional',
+              category_es: hp.category_es || '',
               section1Price: hp.section1Price,
               section2Price: hp.section2Price,
               itemizedServices: hp.itemizedServices,
+              visitationHours: hp.visitationHours !== undefined ? Number(hp.visitationHours) : 3,
+              displayOrder: hp.displayOrder !== undefined ? Number(hp.displayOrder) : 0,
               isCustom: true,
               funeralHomeId: selectedHomeId
             });
           }
         }
+
+        combined.sort((a, b) => {
+          const orderA = a.displayOrder !== undefined && a.displayOrder !== null ? Number(a.displayOrder) : 0;
+          const orderB = b.displayOrder !== undefined && b.displayOrder !== null ? Number(b.displayOrder) : 0;
+          if (orderA !== orderB) return orderA - orderB;
+          return (a.packageName || a.name || '').localeCompare(b.packageName || b.name || '');
+        });
 
         setServiceItems(combined);
 
@@ -197,6 +214,8 @@ export function AdminDataProvider({ children }) {
                 id: item._id || item.id,
                 _id: item._id || item.id,
                 name: item.name,
+                itemName_es: item.itemName_es || item.name_es || '',
+                name_es: item.itemName_es || item.name_es || '',
                 price: Number(item.listPrice),
                 listPrice: Number(item.listPrice),
                 isActive: Boolean(item.isActive && Number(item.listPrice) > 0),
@@ -235,6 +254,8 @@ export function AdminDataProvider({ children }) {
                 id: item._id || item.id,
                 _id: item._id || item.id,
                 name: item.name,
+                itemName_es: item.itemName_es || item.name_es || '',
+                name_es: item.itemName_es || item.name_es || '',
                 price: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : (item.price !== null && item.price !== undefined ? Number(item.price) : 0),
                 listPrice: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : (item.price !== null && item.price !== undefined ? Number(item.price) : 0),
                 isActive: Boolean(
@@ -478,18 +499,25 @@ export function AdminDataProvider({ children }) {
     }
   }, [addToast, adminDb.packages, lang, serviceItems]);
 
-  const handleAddServicePackage = useCallback(async ({ packageName, category, itemizedServices, section1Price, section2Price, homeId }) => {
+  const handleAddServicePackage = useCallback(async ({ packageName, packageName_es, category, category_es, itemizedServices, section1Price, section2Price, visitationHours, displayOrder, homeId }) => {
     const targetHome = homeId || selectedHomeId;
     const s1 = Math.max(0, Number(section1Price) || 0);
     const s2 = Math.max(0, Number(section2Price) || 0);
+    const vHours = visitationHours !== undefined ? Math.max(0, Number(visitationHours)) : 3;
+    const dOrder = displayOrder !== undefined ? Math.max(0, Number(displayOrder)) : 0;
 
     try {
       const payload = {
         packageName: packageName.trim(),
+        packageName_es: (packageName_es || '').trim(),
+        name_es: (packageName_es || '').trim(),
         category: category.trim(),
+        category_es: (category_es || '').trim(),
         itemizedServices: itemizedServices || {},
         section1Price: s1,
         section2Price: s2,
+        visitationHours: vHours,
+        displayOrder: dOrder,
       };
 
       const res = await api.post(`/funeral-homes/${targetHome}/packages`, payload);
@@ -501,15 +529,29 @@ export function AdminDataProvider({ children }) {
         id: createdId,
         name: created.packageName || packageName.trim(),
         packageName: created.packageName || packageName.trim(),
+        packageName_es: created.packageName_es || packageName_es || '',
+        name_es: created.packageName_es || packageName_es || '',
         category: created.category || category,
+        category_es: created.category_es || category_es || '',
         itemizedServices: created.itemizedServices || itemizedServices || {},
         section1Price: s1,
         section2Price: s2,
+        visitationHours: created.visitationHours !== undefined ? Number(created.visitationHours) : vHours,
+        displayOrder: created.displayOrder !== undefined ? Number(created.displayOrder) : dOrder,
         isCustom: true,
         funeralHomeId: targetHome
       };
 
-      setServiceItems(prev => [...prev, newServiceItem]);
+      setServiceItems(prev => {
+        const next = [...prev, newServiceItem];
+        next.sort((a, b) => {
+          const orderA = a.displayOrder !== undefined && a.displayOrder !== null ? Number(a.displayOrder) : 0;
+          const orderB = b.displayOrder !== undefined && b.displayOrder !== null ? Number(b.displayOrder) : 0;
+          if (orderA !== orderB) return orderA - orderB;
+          return (a.packageName || a.name || '').localeCompare(b.packageName || b.name || '');
+        });
+        return next;
+      });
 
       const packageKey = `${targetHome}|${createdId}`;
       setAdminDb(prev => ({
@@ -540,18 +582,25 @@ export function AdminDataProvider({ children }) {
     }
   }, [addToast, lang, selectedHomeId]);
 
-  const handleUpdateServicePackage = useCallback(async ({ packageId, packageName, category, itemizedServices, section1Price, section2Price, homeId }) => {
+  const handleUpdateServicePackage = useCallback(async ({ packageId, packageName, packageName_es, category, category_es, itemizedServices, section1Price, section2Price, visitationHours, displayOrder, homeId }) => {
     const targetHome = homeId || selectedHomeId;
     const s1 = Math.max(0, Number(section1Price) || 0);
     const s2 = Math.max(0, Number(section2Price) || 0);
+    const vHours = visitationHours !== undefined ? Math.max(0, Number(visitationHours)) : 3;
+    const dOrder = displayOrder !== undefined ? Math.max(0, Number(displayOrder)) : undefined;
 
     try {
       const payload = {
         packageName: packageName.trim(),
+        packageName_es: (packageName_es || '').trim(),
+        name_es: (packageName_es || '').trim(),
         category: category.trim(),
+        category_es: (category_es || '').trim(),
         itemizedServices: itemizedServices || {},
         section1Price: s1,
         section2Price: s2,
+        visitationHours: vHours,
+        ...(dOrder !== undefined ? { displayOrder: dOrder } : {}),
       };
 
       try {
@@ -561,9 +610,14 @@ export function AdminDataProvider({ children }) {
         try {
           await api.patch(`/catalog/${packageId}`, {
             name: packageName.trim(),
+            packageName_es: (packageName_es || '').trim(),
+            name_es: (packageName_es || '').trim(),
             category: category.trim(),
+            category_es: (category_es || '').trim(),
             section1Price: s1,
-            section2Price: s2
+            section2Price: s2,
+            visitationHours: vHours,
+            ...(dOrder !== undefined ? { displayOrder: dOrder } : {}),
           });
         } catch {
           // If neither exists by this ID, create it as a package for this home
@@ -571,20 +625,36 @@ export function AdminDataProvider({ children }) {
         }
       }
 
-      setServiceItems(prev => prev.map(item => {
-        if ((item._id || item.id) === packageId) {
-          return {
-            ...item,
-            name: packageName.trim(),
-            packageName: packageName.trim(),
-            category: category.trim(),
-            itemizedServices: itemizedServices || item.itemizedServices || {},
-            section1Price: s1,
-            section2Price: s2
-          };
-        }
-        return item;
-      }));
+      setServiceItems(prev => {
+        const next = prev.map(item => {
+          if ((item._id || item.id) === packageId) {
+            return {
+              ...item,
+              name: packageName.trim(),
+              packageName: packageName.trim(),
+              packageName_es: packageName_es !== undefined ? packageName_es : item.packageName_es,
+              name_es: packageName_es !== undefined ? packageName_es : item.name_es,
+              category: category.trim(),
+              category_es: category_es !== undefined ? category_es : item.category_es,
+              itemizedServices: itemizedServices || item.itemizedServices || {},
+              section1Price: s1,
+              section2Price: s2,
+              visitationHours: vHours,
+              displayOrder: dOrder !== undefined ? dOrder : (item.displayOrder !== undefined ? Number(item.displayOrder) : 0),
+            };
+          }
+          return item;
+        });
+
+        next.sort((a, b) => {
+          const orderA = a.displayOrder !== undefined && a.displayOrder !== null ? Number(a.displayOrder) : 0;
+          const orderB = b.displayOrder !== undefined && b.displayOrder !== null ? Number(b.displayOrder) : 0;
+          if (orderA !== orderB) return orderA - orderB;
+          return (a.packageName || a.name || '').localeCompare(b.packageName || b.name || '');
+        });
+
+        return next;
+      });
 
       const packageKey = `${targetHome}|${packageId}`;
       setAdminDb(prev => ({
@@ -646,8 +716,11 @@ export function AdminDataProvider({ children }) {
 
   const handleAddItem = useCallback(async ({
     name,
+    itemName_es,
+    name_es,
     price,
     category,
+    category_es,
     homeId,
     description = '',
     image = '',
@@ -663,12 +736,15 @@ export function AdminDataProvider({ children }) {
     const targetHome = (assignedFuneralHomeId && assignedFuneralHomeId !== '*') ? assignedFuneralHomeId : (homeId || selectedHomeId);
     const isDestActive = hasDestinations && Array.isArray(destinations) && destinations.length > 0;
     const isActive = priceNum > 0 || isDestActive;
+    const esName = (itemName_es || name_es || '').trim();
 
     try {
       let createdBackendItem = null;
       try {
         const payload = {
           name: name.trim(),
+          itemName_es: esName,
+          name_es: esName,
           itemType: category === 'casket' ? 'CASKET' : 'ADDON',
           listPrice: priceNum,
           specifications: description,
@@ -697,6 +773,8 @@ export function AdminDataProvider({ children }) {
           id,
           _id: id,
           name: name.trim(),
+          itemName_es: esName,
+          name_es: esName,
           price: priceNum,
           listPrice: priceNum,
           home: targetHome,
@@ -726,6 +804,8 @@ export function AdminDataProvider({ children }) {
           id,
           _id: id,
           name: name.trim(),
+          itemName_es: esName,
+          name_es: esName,
           price: priceNum,
           listPrice: priceNum,
           home: targetHome,
@@ -740,7 +820,7 @@ export function AdminDataProvider({ children }) {
           category: type || 'Non-Guaranteed',
           description: description || '',
           specifications: description || '',
-          taxable: false
+          taxable: type === 'Guaranteed'
         };
         const updated = [...(adminDb.addons || []), newAddon];
         await updatePrices(targetHome, { addons: updated });
@@ -763,6 +843,10 @@ export function AdminDataProvider({ children }) {
         try {
           const patchPayload = {};
           if (updates.name !== undefined) patchPayload.name = updates.name;
+          if (updates.itemName_es !== undefined || updates.name_es !== undefined) {
+            patchPayload.itemName_es = updates.itemName_es !== undefined ? updates.itemName_es : updates.name_es;
+            patchPayload.name_es = patchPayload.itemName_es;
+          }
           if (updates.price !== undefined) {
             const p = Number(updates.price) || 0;
             patchPayload.listPrice = p;
@@ -813,6 +897,8 @@ export function AdminDataProvider({ children }) {
             return {
               ...c,
               name: updates.name !== undefined ? updates.name : c.name,
+              itemName_es: updates.itemName_es !== undefined ? updates.itemName_es : (c.itemName_es || c.name_es || ''),
+              name_es: updates.itemName_es !== undefined ? updates.itemName_es : (c.name_es || c.itemName_es || ''),
               price: newPrice,
               listPrice: newPrice,
               isActive: updates.isActive !== undefined ? Boolean(updates.isActive) : (newPrice > 0),
@@ -838,17 +924,14 @@ export function AdminDataProvider({ children }) {
         const updated = (adminDb.addons || []).map(a => {
           if (a.id === itemId || a._id === itemId) {
             const newPrice = updates.price !== undefined ? Number(updates.price) : a.price;
-            const hasDest = updates.hasDestinations !== undefined ? Boolean(updates.hasDestinations) : a.hasDestinations;
-            const dests = updates.destinations !== undefined ? updates.destinations : a.destinations;
-            const isActive = updates.isActive !== undefined
-              ? Boolean(updates.isActive)
-              : (newPrice > 0 || (hasDest && dests?.length > 0));
-
             return {
               ...a,
               name: updates.name !== undefined ? updates.name : a.name,
+              itemName_es: updates.itemName_es !== undefined ? updates.itemName_es : (a.itemName_es || a.name_es || ''),
+              name_es: updates.itemName_es !== undefined ? updates.itemName_es : (a.name_es || a.itemName_es || ''),
               price: newPrice,
               listPrice: newPrice,
+              isActive: updates.isActive !== undefined ? Boolean(updates.isActive) : (newPrice > 0 || (a.hasDestinations && a.destinations?.length > 0)),
               description: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : a.description),
               specifications: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : a.description),
               home: updates.assignedFuneralHomeId !== undefined ? updates.assignedFuneralHomeId : a.home,
@@ -856,9 +939,8 @@ export function AdminDataProvider({ children }) {
               assignedPackages: updates.assignedPackages !== undefined ? updates.assignedPackages : a.assignedPackages,
               isMandatory: updates.isMandatory !== undefined ? Boolean(updates.isMandatory) : a.isMandatory,
               isFixedPrice: updates.isFixedPrice !== undefined ? Boolean(updates.isFixedPrice) : a.isFixedPrice,
-              hasDestinations: hasDest,
-              destinations: dests,
-              isActive: isActive,
+              hasDestinations: updates.hasDestinations !== undefined ? Boolean(updates.hasDestinations) : a.hasDestinations,
+              destinations: updates.destinations !== undefined ? updates.destinations : a.destinations,
               type: updates.type !== undefined ? updates.type : a.type
             };
           }
@@ -866,7 +948,7 @@ export function AdminDataProvider({ children }) {
         });
         await updatePrices(selectedHomeId, { addons: updated });
         setAdminDb(prev => ({ ...prev, addons: updated }));
-        addToast(lang === 'es' ? 'Servicio adicional actualizado.' : 'Add-on updated successfully.', 'success');
+        addToast(lang === 'es' ? 'Servicio adicional actualizado con éxito.' : 'Add-on updated successfully.', 'success');
         return true;
       }
     } catch (err) {
