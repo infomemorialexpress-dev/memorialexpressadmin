@@ -5,6 +5,7 @@ import Button from '../../components/common/Button.jsx';
 import InputField from '../../components/common/InputField.jsx';
 import FuneralHomeModal from '../../components/Admin/FuneralHomeModal.jsx';
 import ConfirmDeleteModal from '../../components/common/ConfirmDeleteModal.jsx';
+import DuplicateFuneralHomeModal from '../../components/Admin/DuplicateFuneralHomeModal.jsx';
 import api from '../../services/api.js';
 import { FuneralHomeAdminCardSkeleton } from '../../components/common/SkeletonLoader.jsx';
 import ShimmerImage from '../../components/common/ShimmerImage.jsx';
@@ -20,6 +21,7 @@ export default function FuneralHomesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHome, setEditingHome] = useState(null);
+  const [duplicatingHome, setDuplicatingHome] = useState(null);
   const [deletingHome, setDeletingHome] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -147,6 +149,18 @@ export default function FuneralHomesPage() {
       setIsDeleting(false);
       setDeletingHome(null);
     }
+  };
+
+  const handleDuplicated = (newHome) => {
+    setHomes((prev) => [newHome, ...prev]);
+    const newHomeId = newHome._id || newHome.id;
+    refreshHomes?.(newHomeId);
+    addToast?.(
+      lang === 'es'
+        ? `Funeraria "${newHome.name}" duplicada exitosamente con todo su catálogo y paquetes.`
+        : `Funeral home "${newHome.name}" duplicated successfully with all catalog items and packages.`,
+      'success'
+    );
   };
 
   return (
@@ -352,7 +366,7 @@ export default function FuneralHomesPage() {
                   )}
                 </div>
 
-                {/* Card Actions Footer: ONLY Edit button and Delete icon */}
+                {/* Card Actions Footer: Edit, Duplicate, and Delete buttons */}
                 <div className="card-actions-footer">
                   <Button
                     variant="primary"
@@ -362,6 +376,16 @@ export default function FuneralHomesPage() {
                   >
                     ✏️ {lang === 'es' ? 'Editar' : 'Edit'}
                   </Button>
+
+                  <button
+                    type="button"
+                    className="duplicate-icon-btn"
+                    onClick={() => setDuplicatingHome(home)}
+                    title={lang === 'es' ? 'Duplicar funeraria' : 'Duplicate location'}
+                    aria-label="Duplicate location"
+                  >
+                    📋
+                  </button>
 
                   <button
                     type="button"
@@ -396,6 +420,15 @@ export default function FuneralHomesPage() {
         itemName={deletingHome?.name}
         title={lang === 'es' ? '¿Eliminar Funeraria?' : 'Delete Funeral Home?'}
         isDeleting={isDeleting}
+        lang={lang}
+      />
+
+      {/* Duplicate Funeral Home Modal */}
+      <DuplicateFuneralHomeModal
+        isOpen={Boolean(duplicatingHome)}
+        onClose={() => setDuplicatingHome(null)}
+        home={duplicatingHome}
+        onDuplicated={handleDuplicated}
         lang={lang}
       />
     </div>

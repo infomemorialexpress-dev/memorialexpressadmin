@@ -3,15 +3,7 @@ import InputField from '../common/InputField.jsx';
 import SelectDropdown from '../common/SelectDropdown.jsx';
 import Button from '../common/Button.jsx';
 import ImageUpload from './ImageUpload.jsx';
-
-const DEFAULT_PACKAGE_OPTIONS = [
-  'Two-day service',
-  'One-day service',
-  'Traditional Cremation',
-  'Memorial Cremation',
-  'Direct Cremation',
-  'Forwarding of Remains'
-];
+import api from '../../services/api.js';
 
 export default function AddItemModal({
   isOpen,
@@ -29,11 +21,19 @@ export default function AddItemModal({
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState(defaultCategory);
   const [description, setDescription] = useState('');
+  const [interiorFabricColor, setInteriorFabricColor] = useState('');
+  const [exteriorColor, setExteriorColor] = useState('');
+  const [constructionType, setConstructionType] = useState('');
+  const [modelNumber, setModelNumber] = useState('');
   const [image, setImage] = useState('');
 
   // Casket assignment & packages
   const [assignedFuneralHomeId, setAssignedFuneralHomeId] = useState(locationId || '');
   const [assignedPackages, setAssignedPackages] = useState([]);
+
+  // Live packages fetched dynamically if funeral home is changed
+  const [fetchedPackages, setFetchedPackages] = useState(null);
+  const [isLoadingPackages, setIsLoadingPackages] = useState(false);
 
   // Add-on configuration flags
   const [isMandatory, setIsMandatory] = useState(false);
@@ -50,17 +50,94 @@ export default function AddItemModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  // Extract all available package choices (default + any custom ones)
+  // Fetch packages dynamically if a specific home is selected that differs from locationId
+  useEffect(() => {
+    if (!isOpen) {
+      setFetchedPackages(null);
+      setIsLoadingPackages(false);
+      return;
+    }
+
+    const targetHomeId = assignedFuneralHomeId || locationId;
+
+    if (!targetHomeId || targetHomeId === '*') {
+      setFetchedPackages([]);
+      return;
+    }
+
+    // If matches locationId and serviceItems is already provided, use props.serviceItems
+    if (locationId && String(targetHomeId) === String(locationId)) {
+      setFetchedPackages(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingPackages(true);
+
+    Promise.allSettled([
+      api.get(`/catalog/location/${targetHomeId}?type=SERVICE`),
+      api.get(`/funeral-homes/${targetHomeId}/packages`)
+    ])
+      .then(([catalogRes, packagesRes]) => {
+        if (cancelled) return;
+        const catalogData = catalogRes.status === 'fulfilled' && Array.isArray(catalogRes.value.data) ? catalogRes.value.data : [];
+        const homePackagesData = packagesRes.status === 'fulfilled' && Array.isArray(packagesRes.value.data) ? packagesRes.value.data : [];
+
+        const combined = [...catalogData];
+        for (const hp of homePackagesData) {
+          const hpId = hp._id || hp.id;
+          const hpName = hp.packageName || hp.name || '';
+          const existingIdx = combined.findIndex(
+            c => (c._id || c.id) === hpId || (c.name && c.name.toLowerCase() === hpName.toLowerCase())
+          );
+          if (existingIdx < 0 && hpName) {
+            combined.push({
+              _id: hpId,
+              id: hpId,
+              name: hpName,
+              packageName: hpName
+            });
+          }
+        }
+        setFetchedPackages(combined);
+      })
+      .catch((err) => {
+        console.error('Error fetching packages for funeral home:', err);
+        if (!cancelled) setFetchedPackages([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingPackages(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, assignedFuneralHomeId, locationId]);
+
+  // Extract available packages strictly from live service items for the selected funeral home
   const availablePackages = React.useMemo(() => {
-    const set = new Set(DEFAULT_PACKAGE_OPTIONS);
-    if (Array.isArray(serviceItems)) {
-      serviceItems.forEach(s => {
-        const pName = s.packageName || s.name;
-        if (pName) set.add(pName);
+    const targetHomeId = assignedFuneralHomeId || locationId;
+    if (!targetHomeId || targetHomeId === '*') return [];
+
+    const source = fetchedPackages !== null
+      ? fetchedPackages
+      : (Array.isArray(serviceItems) ? serviceItems : []);
+
+    const list = [];
+    const seen = new Set();
+    if (Array.isArray(source)) {
+      source.forEach(s => {
+        const pId = typeof s === 'object' ? (s._id || s.id || '') : '';
+        const pName = typeof s === 'string' ? s.trim() : (s?.packageName || s?.name || '').trim();
+        const key = pId || pName;
+        if (pName && !seen.has(key)) {
+          seen.add(key);
+          list.push({ id: pId || pName, name: pName });
+        }
       });
     }
-    return Array.from(set);
-  }, [serviceItems]);
+    return list;
+  }, [fetchedPackages, serviceItems, assignedFuneralHomeId, locationId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -88,21 +165,34 @@ export default function AddItemModal({
 
   if (!isOpen) return null;
 
+  const isPackageSelected = (pkg) => {
+    const pkgId = typeof pkg === 'object' ? pkg.id : pkg;
+    const pkgName = typeof pkg === 'object' ? pkg.name : pkg;
+    return assignedPackages.includes(pkgId) || (pkgName && assignedPackages.includes(pkgName));
+  };
+
   const togglePackage = (pkg) => {
+    const pkgId = typeof pkg === 'object' ? pkg.id : pkg;
+    const pkgName = typeof pkg === 'object' ? pkg.name : pkg;
+    const targetVal = pkgId || pkgName;
     setAssignedPackages(prev => {
-      if (prev.includes(pkg)) {
-        return prev.filter(p => p !== pkg);
+      const already = prev.includes(pkgId) || (pkgName && prev.includes(pkgName));
+      if (already) {
+        return prev.filter(p => p !== pkgId && p !== pkgName);
       } else {
-        return [...prev, pkg];
+        return [...prev, targetVal];
       }
     });
   };
 
+  const isAllSelected = availablePackages.length > 0 && availablePackages.every(p => isPackageSelected(p));
+
   const selectAllPackages = () => {
-    if (assignedPackages.length === availablePackages.length) {
+    if (availablePackages.length === 0) return;
+    if (isAllSelected) {
       setAssignedPackages([]);
     } else {
-      setAssignedPackages([...availablePackages]);
+      setAssignedPackages(availablePackages.map(p => p.id || p.name));
     }
   };
 
@@ -161,7 +251,7 @@ export default function AddItemModal({
       category,
       homeId: assignedFuneralHomeId || locationId,
       assignedFuneralHomeId: assignedFuneralHomeId || locationId,
-      assignedPackages: category === 'casket' ? assignedPackages : [],
+      assignedPackages: assignedPackages,
       isMandatory: category === 'addon' ? isMandatory : false,
       isFixedPrice: category === 'addon' ? isFixedPrice : false,
       hasDestinations: category === 'addon' ? hasDestinations : false,
@@ -169,7 +259,12 @@ export default function AddItemModal({
         ? destinations.filter(d => (d.name || '').trim())
         : [],
       type: category === 'addon' ? type : 'Guaranteed',
-      description,
+      description: description || [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
+      specifications: [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
+      interiorFabricColor: interiorFabricColor.trim(),
+      exteriorColor: exteriorColor.trim(),
+      constructionType: constructionType.trim(),
+      modelNumber: modelNumber.trim(),
       image: category === 'casket' ? image : ''
     });
     setIsSubmitting(false);
@@ -244,7 +339,13 @@ export default function AddItemModal({
             <select
               className="form-select"
               value={assignedFuneralHomeId || locationId}
-              onChange={(e) => setAssignedFuneralHomeId(e.target.value)}
+              onChange={(e) => {
+                const newHomeId = e.target.value;
+                setAssignedFuneralHomeId(newHomeId);
+                if (newHomeId !== assignedFuneralHomeId) {
+                  setAssignedPackages([]);
+                }
+              }}
               style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 14 }}
             >
               {homes.map((h) => (
@@ -260,13 +361,13 @@ export default function AddItemModal({
             </span>
           </div>
 
-          {/* CASKET SPECIFIC: Multi-select Service Packages */}
-          {category === 'casket' && (
-            <div className="form-group" style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label className="form-label" style={{ fontWeight: 600, fontSize: 13, color: '#334155', margin: 0 }}>
-                  {lang === 'es' ? 'Paquetes de Servicio Asignados' : 'Assigned Service Packages'}
-                </label>
+          {/* Multi-select Service Packages (Applicable for both Caskets and Add-ons) */}
+          <div className="form-group" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: 13, color: '#334155', margin: 0 }}>
+                {lang === 'es' ? 'Paquetes de Servicio Asignados' : 'Assigned Service Packages'}
+              </label>
+              {availablePackages.length > 0 && (
                 <button
                   type="button"
                   onClick={selectAllPackages}
@@ -280,28 +381,36 @@ export default function AddItemModal({
                     padding: 0
                   }}
                 >
-                  {assignedPackages.length === availablePackages.length
+                  {isAllSelected
                     ? (lang === 'es' ? 'Deseleccionar todos' : 'Clear all')
                     : (lang === 'es' ? 'Seleccionar todos' : 'Select all')}
                 </button>
-              </div>
+              )}
+            </div>
 
-              <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 7,
-                padding: '10px',
-                background: '#f8fafc',
-                borderRadius: 8,
-                border: '1px solid #e2e8f0',
-                maxHeight: 140,
-                overflowY: 'auto'
-              }}>
-                {availablePackages.map(pkg => {
-                  const isSelected = assignedPackages.includes(pkg);
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 7,
+              padding: '10px',
+              background: '#f8fafc',
+              borderRadius: 8,
+              border: '1px solid #e2e8f0',
+              maxHeight: 140,
+              overflowY: 'auto'
+            }}>
+              {availablePackages.length === 0 ? (
+                <span style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', padding: '4px 2px' }}>
+                  {isLoadingPackages
+                    ? (lang === 'es' ? 'Cargando paquetes de servicio...' : 'Loading service packages...')
+                    : (lang === 'es' ? 'No hay paquetes de servicio asignados para esta funeraria.' : 'No service packages found for this funeral home.')}
+                </span>
+              ) : (
+                availablePackages.map(pkg => {
+                  const isSelected = isPackageSelected(pkg);
                   return (
                     <button
-                      key={pkg}
+                      key={pkg.id || pkg.name}
                       type="button"
                       onClick={() => togglePackage(pkg)}
                       style={{
@@ -320,18 +429,20 @@ export default function AddItemModal({
                       }}
                     >
                       <span>{isSelected ? '✓' : '+'}</span>
-                      <span>{pkg}</span>
+                      <span>{pkg.name}</span>
                     </button>
                   );
-                })}
-              </div>
-              <span style={{ fontSize: 11.5, color: '#64748b', display: 'block', marginTop: 4 }}>
-                {assignedPackages.length === 0
-                  ? (lang === 'es' ? '💡 Sin seleccionar = Disponible para todos los paquetes funerarios.' : '💡 None selected = Available for all funeral service packages.')
-                  : (lang === 'es' ? `Asignado a ${assignedPackages.length} paquete(s) específico(s).` : `Mapped strictly to ${assignedPackages.length} selected package(s).`)}
-              </span>
+                })
+              )}
             </div>
-          )}
+            <span style={{ fontSize: 11.5, color: '#64748b', display: 'block', marginTop: 4 }}>
+              {availablePackages.length === 0
+                ? ''
+                : assignedPackages.length === 0
+                ? (lang === 'es' ? '💡 Sin seleccionar = Disponible para todos los paquetes funerarios.' : '💡 None selected = Available for all funeral service packages.')
+                : (lang === 'es' ? `Asignado a ${assignedPackages.length} paquete(s) específico(s).` : `Mapped strictly to ${assignedPackages.length} selected package(s).`)}
+            </span>
+          </div>
 
           {/* ADD-ON SPECIFIC: Mandatory, Fixed Price & Classification */}
           {category === 'addon' && (
@@ -519,12 +630,32 @@ export default function AddItemModal({
           />
 
           {category === 'casket' && (
-            <InputField
-              label={lang === 'es' ? 'Especificaciones / Material' : 'Specifications & Material'}
-              placeholder="e.g. 18 Gauge Steel, Velvet Interior, Brushed Finish"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <InputField
+                label={lang === 'es' ? 'Tela y Color Interior' : 'Interior Fabric & Color'}
+                placeholder="e.g. Ivory Velvet Interior"
+                value={interiorFabricColor}
+                onChange={(e) => setInteriorFabricColor(e.target.value)}
+              />
+              <InputField
+                label={lang === 'es' ? 'Color Exterior' : 'Exterior Color'}
+                placeholder="e.g. Dark Russet Cherry Finish"
+                value={exteriorColor}
+                onChange={(e) => setExteriorColor(e.target.value)}
+              />
+              <InputField
+                label={lang === 'es' ? 'Construcción y Tipo' : 'Construction & Type'}
+                placeholder="e.g. Solid Poplar Wood / 18 Gauge Steel"
+                value={constructionType}
+                onChange={(e) => setConstructionType(e.target.value)}
+              />
+              <InputField
+                label={lang === 'es' ? 'Número de Modelo' : 'Model Number'}
+                placeholder="e.g. MC-101 / Optional"
+                value={modelNumber}
+                onChange={(e) => setModelNumber(e.target.value)}
+              />
+            </div>
           )}
 
           <div className="modal-actions-footer">

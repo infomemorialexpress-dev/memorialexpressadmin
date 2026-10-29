@@ -32,8 +32,11 @@ export default function AddServicePackageModal({
   const [funeralCoach, setFuneralCoach] = useState('375');
   const [utilityVehicles, setUtilityVehicles] = useState('100');
 
-  // Exactly 3 custom 'Other Services' rows
+  // Exactly 6 custom 'Other Services' rows
   const [otherServices, setOtherServices] = useState([
+    { name: '', customName_es: '', price: '' },
+    { name: '', customName_es: '', price: '' },
+    { name: '', customName_es: '', price: '' },
     { name: '', customName_es: '', price: '' },
     { name: '', customName_es: '', price: '' },
     { name: '', customName_es: '', price: '' }
@@ -94,6 +97,21 @@ export default function AddServicePackageModal({
               name: rawOthers[2]?.name || '',
               customName_es: rawOthers[2]?.customName_es || rawOthers[2]?.name_es || '',
               price: rawOthers[2]?.price !== undefined && rawOthers[2]?.price !== null ? String(rawOthers[2].price) : ''
+            },
+            {
+              name: rawOthers[3]?.name || '',
+              customName_es: rawOthers[3]?.customName_es || rawOthers[3]?.name_es || '',
+              price: rawOthers[3]?.price !== undefined && rawOthers[3]?.price !== null ? String(rawOthers[3].price) : ''
+            },
+            {
+              name: rawOthers[4]?.name || '',
+              customName_es: rawOthers[4]?.customName_es || rawOthers[4]?.name_es || '',
+              price: rawOthers[4]?.price !== undefined && rawOthers[4]?.price !== null ? String(rawOthers[4].price) : ''
+            },
+            {
+              name: rawOthers[5]?.name || '',
+              customName_es: rawOthers[5]?.customName_es || rawOthers[5]?.name_es || '',
+              price: rawOthers[5]?.price !== undefined && rawOthers[5]?.price !== null ? String(rawOthers[5].price) : ''
             }
           ]);
         } else {
@@ -113,6 +131,9 @@ export default function AddServicePackageModal({
           setUtilityVehicles('0');
           setPackageSavings('0');
           setOtherServices([
+            { name: '', customName_es: '', price: '' },
+            { name: '', customName_es: '', price: '' },
+            { name: '', customName_es: '', price: '' },
             { name: '', customName_es: '', price: '' },
             { name: '', customName_es: '', price: '' },
             { name: '', customName_es: '', price: '' }
@@ -143,6 +164,9 @@ export default function AddServicePackageModal({
         setFuneralCoach('375');
         setUtilityVehicles('100');
         setOtherServices([
+          { name: '', customName_es: '', price: '' },
+          { name: '', customName_es: '', price: '' },
+          { name: '', customName_es: '', price: '' },
           { name: '', customName_es: '', price: '' },
           { name: '', customName_es: '', price: '' },
           { name: '', customName_es: '', price: '' }
@@ -529,7 +553,7 @@ export default function AddServicePackageModal({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[0, 1, 2].map((idx) => (
+              {[0, 1, 2, 3, 4, 5].map((idx) => (
                 <div
                   key={idx}
                   style={{
@@ -554,7 +578,13 @@ export default function AddServicePackageModal({
                         ? (lang === 'es' ? 'ej. Escolta de limusina' : 'e.g. Limousine Escort')
                         : idx === 1
                         ? (lang === 'es' ? 'ej. Auto de flores' : 'e.g. Flower Car')
-                        : (lang === 'es' ? 'ej. Servicio memorial extra' : 'e.g. Additional Memorial Service')
+                        : idx === 2
+                        ? (lang === 'es' ? 'ej. Servicio memorial extra' : 'e.g. Additional Memorial Service')
+                        : idx === 3
+                        ? (lang === 'es' ? 'ej. Millas adicionales' : 'e.g. Additional Miles')
+                        : idx === 4
+                        ? (lang === 'es' ? 'ej. Servicio fin de semana' : 'e.g. Weekend / Evening Service')
+                        : (lang === 'es' ? 'ej. Cargo de proceso especial' : 'e.g. Special Process Fee')
                     }
                     value={otherServices[idx].name}
                     onChange={(e) => handleOtherServiceChange(idx, 'name', e.target.value)}
@@ -572,7 +602,13 @@ export default function AddServicePackageModal({
                         ? (lang === 'es' ? 'ej. Escolta de limusina' : 'e.g. Escolta de limusina')
                         : idx === 1
                         ? (lang === 'es' ? 'ej. Auto de flores' : 'e.g. Auto de flores')
-                        : (lang === 'es' ? 'ej. Servicio memorial extra' : 'e.g. Servicio memorial extra')
+                        : idx === 2
+                        ? (lang === 'es' ? 'ej. Servicio memorial extra' : 'e.g. Servicio memorial extra')
+                        : idx === 3
+                        ? (lang === 'es' ? 'ej. Millas adicionales' : 'e.g. Millas adicionales')
+                        : idx === 4
+                        ? (lang === 'es' ? 'ej. Servicio fin de semana' : 'e.g. Servicio fin de semana')
+                        : (lang === 'es' ? 'ej. Cargo de proceso especial' : 'e.g. Cargo de proceso especial')
                     }
                     value={otherServices[idx].customName_es || ''}
                     onChange={(e) => handleOtherServiceChange(idx, 'customName_es', e.target.value)}

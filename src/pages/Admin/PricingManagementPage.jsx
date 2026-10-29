@@ -637,6 +637,7 @@ export default function PricingManagementPage() {
         }}
         item={editingItem}
         itemType={editingItemType}
+        locationId={currentHomeId}
         homes={homes}
         serviceItems={serviceItems}
         lang={lang}

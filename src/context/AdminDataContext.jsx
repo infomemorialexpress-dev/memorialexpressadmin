@@ -748,6 +748,10 @@ export function AdminDataProvider({ children }) {
           itemType: category === 'casket' ? 'CASKET' : 'ADDON',
           listPrice: priceNum,
           specifications: description,
+          interiorFabricColor: itemData.interiorFabricColor || '',
+          exteriorColor: itemData.exteriorColor || '',
+          constructionType: itemData.constructionType || '',
+          modelNumber: itemData.modelNumber || '',
           imageUrl: image,
           funeralHomeId: targetHome,
           assignedFuneralHomeId: targetHome,
@@ -787,6 +791,10 @@ export function AdminDataProvider({ children }) {
           category: type || 'Guaranteed',
           description: description || 'Custom catalog model',
           specifications: description || 'Custom catalog model',
+          interiorFabricColor: itemData.interiorFabricColor || '',
+          exteriorColor: itemData.exteriorColor || '',
+          constructionType: itemData.constructionType || '',
+          modelNumber: itemData.modelNumber || '',
           image: image || '',
           imageUrl: image || '',
           taxable: true
@@ -855,6 +863,10 @@ export function AdminDataProvider({ children }) {
           if (updates.specifications !== undefined || updates.description !== undefined) {
             patchPayload.specifications = updates.specifications || updates.description;
           }
+          if (updates.interiorFabricColor !== undefined) patchPayload.interiorFabricColor = updates.interiorFabricColor;
+          if (updates.exteriorColor !== undefined) patchPayload.exteriorColor = updates.exteriorColor;
+          if (updates.constructionType !== undefined) patchPayload.constructionType = updates.constructionType;
+          if (updates.modelNumber !== undefined) patchPayload.modelNumber = updates.modelNumber;
           if (updates.image !== undefined) patchPayload.imageUrl = updates.image;
           if (updates.assignedFuneralHomeId !== undefined) {
             patchPayload.assignedFuneralHomeId = updates.assignedFuneralHomeId === '*' ? null : updates.assignedFuneralHomeId;
@@ -904,6 +916,10 @@ export function AdminDataProvider({ children }) {
               isActive: updates.isActive !== undefined ? Boolean(updates.isActive) : (newPrice > 0),
               description: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : c.description),
               specifications: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : c.description),
+              interiorFabricColor: updates.interiorFabricColor !== undefined ? updates.interiorFabricColor : c.interiorFabricColor,
+              exteriorColor: updates.exteriorColor !== undefined ? updates.exteriorColor : c.exteriorColor,
+              constructionType: updates.constructionType !== undefined ? updates.constructionType : c.constructionType,
+              modelNumber: updates.modelNumber !== undefined ? updates.modelNumber : c.modelNumber,
               image: updates.image !== undefined ? updates.image : c.image,
               imageUrl: updates.image !== undefined ? updates.image : c.image,
               home: updates.assignedFuneralHomeId !== undefined ? updates.assignedFuneralHomeId : c.home,

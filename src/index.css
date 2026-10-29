@@ -2044,6 +2044,30 @@ p.page-subtitle {
   transform: scale(1.05);
 }
 
+.duplicate-icon-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #2563eb;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.duplicate-icon-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  transform: scale(1.05);
+}
+
 /* Image Upload Component */
 .image-upload-wrapper {
   margin-bottom: 18px;
