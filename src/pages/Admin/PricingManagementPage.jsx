@@ -398,10 +398,29 @@ export default function PricingManagementPage() {
                 setIsAddPackageModalOpen(true);
               }}
               onDuplicatePackage={(pkg) => {
+                const copiedData = { ...pkg };
+                delete copiedData._id;
+                delete copiedData.id;
+                delete copiedData.packageId;
+                delete copiedData.serviceId;
+                delete copiedData.catalogId;
+                delete copiedData.createdAt;
+                delete copiedData.updatedAt;
+
+                const baseName = pkg.packageName || pkg.name || '';
+                const baseNameEs = pkg.packageName_es || pkg.name_es || '';
+                const copySuffix = lang === 'es' ? '(Copia)' : '(Copy)';
+                const copyName = baseName ? `${baseName} ${copySuffix}` : '';
+                const copyNameEs = baseNameEs ? `${baseNameEs} (Copia)` : '';
+
                 setEditingPackage({
-                  ...pkg,
+                  ...copiedData,
                   isDuplicate: true,
-                  packageName: pkg.packageName ? `${pkg.packageName} (Copy)` : (pkg.name ? `${pkg.name} (Copy)` : '')
+                  isEdit: false,
+                  packageName: copyName,
+                  name: copyName,
+                  packageName_es: copyNameEs,
+                  name_es: copyNameEs
                 });
                 setIsAddPackageModalOpen(true);
               }}
@@ -610,7 +629,13 @@ export default function PricingManagementPage() {
           setEditingPackage(null);
         }}
         onSavePackage={async (pkgData) => {
-          if (editingPackage) {
+          const isEditMode = Boolean(
+            editingPackage &&
+            !editingPackage.isDuplicate &&
+            editingPackage.isEdit !== false &&
+            (pkgData.packageId || editingPackage._id || editingPackage.id)
+          );
+          if (isEditMode) {
             return await handleUpdateServicePackage({
               ...pkgData,
               packageId: pkgData.packageId || editingPackage._id || editingPackage.id || editingPackage.serviceId,

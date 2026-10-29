@@ -24,9 +24,15 @@ export default function FuneralHomeModal({
     image: '',
     customNote: '',
     noteColor: '#008000',
+    branches: [],
     locations: [],
     customForms: []
   });
+
+  const [branchName, setBranchName] = useState('');
+  const [branchAddress, setBranchAddress] = useState('');
+  const [branchCity, setBranchCity] = useState('');
+  const [branchPhone, setBranchPhone] = useState('');
 
   const [chapelCity, setChapelCity] = useState('');
   const [chapelZip, setChapelZip] = useState('');
@@ -58,6 +64,14 @@ export default function FuneralHomeModal({
         image: initialData.imageUrl || initialData.image || '',
         customNote: initialData.customNote || initialData.program || '',
         noteColor: initialData.noteColor || '#008000',
+        branches: Array.isArray(initialData.branches)
+          ? initialData.branches.map(b => ({
+              branchName: b.branchName || b.name || '',
+              streetAddress: b.streetAddress || b.address || '',
+              city: b.city || '',
+              phone: b.phone || ''
+            }))
+          : [],
         locations: chapelsList.map(c => ({
           city: c.city || '',
           zip: c.zip || '',
@@ -78,11 +92,16 @@ export default function FuneralHomeModal({
         image: '',
         customNote: '',
         noteColor: '#008000',
+        branches: [],
         locations: [],
         customForms: []
       });
     }
     setFormError('');
+    setBranchName('');
+    setBranchAddress('');
+    setBranchCity('');
+    setBranchPhone('');
     setChapelCity('');
     setChapelZip('');
     setChapelCounty('');
@@ -97,6 +116,31 @@ export default function FuneralHomeModal({
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddBranch = () => {
+    if (!branchName.trim() || (formData.branches && formData.branches.length >= 4)) return;
+    const newBranch = {
+      branchName: branchName.trim(),
+      streetAddress: branchAddress.trim(),
+      city: branchCity.trim(),
+      phone: branchPhone.trim(),
+    };
+    setFormData(prev => ({
+      ...prev,
+      branches: [...(prev.branches || []), newBranch].slice(0, 4)
+    }));
+    setBranchName('');
+    setBranchAddress('');
+    setBranchCity('');
+    setBranchPhone('');
+  };
+
+  const handleRemoveBranch = (indexToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      branches: (prev.branches || []).filter((_, idx) => idx !== indexToRemove)
+    }));
   };
 
   const handleAddChapel = () => {
@@ -265,6 +309,16 @@ export default function FuneralHomeModal({
           fileUrl: String(f.fileUrl || f.url || '').trim()
         }));
 
+      const branchesToSave = (formData.branches || [])
+        .filter(b => b && b.branchName && b.branchName.trim())
+        .slice(0, 4)
+        .map(b => ({
+          branchName: b.branchName.trim(),
+          streetAddress: (b.streetAddress || '').trim(),
+          city: (b.city || '').trim(),
+          phone: (b.phone || '').trim()
+        }));
+
       const payload = {
         name: formData.name.trim(),
         phone: formData.phone.trim(),
@@ -276,6 +330,7 @@ export default function FuneralHomeModal({
         customNote: formData.customNote?.trim() || '',
         noteColor: formData.noteColor || '#008000',
         program: formData.customNote?.trim() || '',
+        branches: branchesToSave,
         chapels: chapelsToSave,
         customForms: customFormsToSave
       };
@@ -574,6 +629,166 @@ export default function FuneralHomeModal({
               value={formData.county}
               onChange={(e) => handleChange('county', e.target.value)}
             />
+          </div>
+
+          {/* Sub-Locations / Branches (Up to 4 Branches) */}
+          <div
+            className="branches-manager"
+            style={{
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '16px',
+              marginTop: '16px',
+              marginBottom: '20px'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '15px', fontWeight: 700, color: '#183655' }}>
+                  🏢 {lang === 'es' ? 'Sucursales / Sub-Ubicaciones' : 'Branches / Sub-Locations'} ({formData.branches?.length || 0}/4)
+                </span>
+                {(formData.branches?.length || 0) >= 4 && (
+                  <span style={{ fontSize: '11px', fontWeight: 650, color: '#dc2626', backgroundColor: '#fee2e2', padding: '2px 8px', borderRadius: '4px' }}>
+                    {lang === 'es' ? 'Máximo alcanzado (4)' : 'Maximum reached (4)'}
+                  </span>
+                )}
+              </div>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>
+                {lang === 'es' ? 'Hasta 4 sucursales' : 'Up to 4 branches allowed'}
+              </span>
+            </div>
+
+            <p style={{ fontSize: '12.5px', color: '#64748b', margin: '0 0 12px 0', lineHeight: 1.4 }}>
+              {lang === 'es'
+                ? 'Agregue sucursales específicas con su dirección, ciudad y teléfono de contacto para el cotizador y PDF.'
+                : 'Add specific branches with custom address, city, and phone for the agent quoter and final PDF.'}
+            </p>
+
+            {/* List of existing branches */}
+            {formData.branches && formData.branches.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+                {formData.branches.map((b, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '10px 14px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          backgroundColor: '#e0f2fe',
+                          color: '#0369a1',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '2px 7px',
+                          borderRadius: '4px',
+                          textTransform: 'uppercase'
+                        }}>
+                          {lang === 'es' ? `Sucursal ${idx + 1}` : `Branch ${idx + 1}`}
+                        </span>
+                        <strong style={{ fontSize: '13.5px', color: '#1e293b' }}>{b.branchName}</strong>
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '2px' }}>
+                        {b.streetAddress && <span>📍 {b.streetAddress}{b.city ? `, ${b.city}` : ''}</span>}
+                        {!b.streetAddress && b.city && <span>📍 {b.city}</span>}
+                        {b.phone && <span>📞 {b.phone}</span>}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveBranch(idx)}
+                      style={{
+                        background: '#fee2e2',
+                        border: '1px solid #fecaca',
+                        color: '#b91c1c',
+                        width: '26px',
+                        height: '26px',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '13px',
+                        fontWeight: 'bold',
+                        flexShrink: 0
+                      }}
+                      title={lang === 'es' ? 'Eliminar sucursal' : 'Remove branch'}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Inputs to add a new branch if under limit of 4 */}
+            {(formData.branches?.length || 0) < 4 && (
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px dashed #94a3b8',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}
+              >
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                  + {lang === 'es' ? 'Nueva Sucursal' : 'Add New Branch'} ({(formData.branches?.length || 0) + 1}/4)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder={lang === 'es' ? 'Nombre de la Sucursal (ej. Downey Branch)*' : 'Branch Name (e.g. Downey Branch)*'}
+                    value={branchName}
+                    onChange={(e) => setBranchName(e.target.value)}
+                    style={{ padding: '8px 10px', fontSize: '13px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder={lang === 'es' ? 'Dirección (ej. 8350 Florence Ave)' : 'Street Address (e.g. 8350 Florence Ave)'}
+                    value={branchAddress}
+                    onChange={(e) => setBranchAddress(e.target.value)}
+                    style={{ padding: '8px 10px', fontSize: '13px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder={lang === 'es' ? 'Ciudad (ej. Downey)' : 'City (e.g. Downey)'}
+                    value={branchCity}
+                    onChange={(e) => setBranchCity(e.target.value)}
+                    style={{ padding: '8px 10px', fontSize: '13px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder={lang === 'es' ? 'Teléfono (ej. 562-294-4400)' : 'Phone (e.g. 562-294-4400)'}
+                    value={branchPhone}
+                    onChange={(e) => setBranchPhone(e.target.value)}
+                    style={{ padding: '8px 10px', fontSize: '13px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleAddBranch}
+                    disabled={!branchName.trim()}
+                    style={{ padding: '6px 14px', fontSize: '12.5px', fontWeight: 600 }}
+                  >
+                    + {lang === 'es' ? 'Agregar Sucursal' : 'Add Branch'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 4. Affiliated Chapels & Sub-Locations Tags with City, ZIP, and Surcharge */}

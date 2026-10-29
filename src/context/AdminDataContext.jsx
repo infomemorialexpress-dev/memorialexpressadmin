@@ -130,6 +130,7 @@ export function AdminDataProvider({ children }) {
               section2Price: hp.section2Price !== undefined ? hp.section2Price : combined[existingIdx].section2Price,
               itemizedServices: hp.itemizedServices || combined[existingIdx].itemizedServices,
               visitationHours: hp.visitationHours !== undefined ? Number(hp.visitationHours) : (combined[existingIdx].visitationHours ?? 3),
+              transferMiles: hp.transferMiles !== undefined ? Number(hp.transferMiles) : (combined[existingIdx].transferMiles ?? 25),
               displayOrder: hp.displayOrder !== undefined ? Number(hp.displayOrder) : (combined[existingIdx].displayOrder !== undefined ? Number(combined[existingIdx].displayOrder) : 0),
               isCustom: combined[existingIdx].isCustom || false,
             };
@@ -147,6 +148,7 @@ export function AdminDataProvider({ children }) {
               section2Price: hp.section2Price,
               itemizedServices: hp.itemizedServices,
               visitationHours: hp.visitationHours !== undefined ? Number(hp.visitationHours) : 3,
+              transferMiles: hp.transferMiles !== undefined ? Number(hp.transferMiles) : 25,
               displayOrder: hp.displayOrder !== undefined ? Number(hp.displayOrder) : 0,
               isCustom: true,
               funeralHomeId: selectedHomeId
@@ -499,11 +501,12 @@ export function AdminDataProvider({ children }) {
     }
   }, [addToast, adminDb.packages, lang, serviceItems]);
 
-  const handleAddServicePackage = useCallback(async ({ packageName, packageName_es, category, category_es, itemizedServices, section1Price, section2Price, visitationHours, displayOrder, homeId }) => {
+  const handleAddServicePackage = useCallback(async ({ packageName, packageName_es, category, category_es, itemizedServices, section1Price, section2Price, visitationHours, transferMiles, displayOrder, homeId }) => {
     const targetHome = homeId || selectedHomeId;
     const s1 = Math.max(0, Number(section1Price) || 0);
     const s2 = Math.max(0, Number(section2Price) || 0);
     const vHours = visitationHours !== undefined ? Math.max(0, Number(visitationHours)) : 3;
+    const tMiles = transferMiles !== undefined ? Math.max(0, Number(transferMiles)) : 25;
     const dOrder = displayOrder !== undefined ? Math.max(0, Number(displayOrder)) : 0;
 
     try {
@@ -517,6 +520,7 @@ export function AdminDataProvider({ children }) {
         section1Price: s1,
         section2Price: s2,
         visitationHours: vHours,
+        transferMiles: tMiles,
         displayOrder: dOrder,
       };
 
@@ -537,6 +541,7 @@ export function AdminDataProvider({ children }) {
         section1Price: s1,
         section2Price: s2,
         visitationHours: created.visitationHours !== undefined ? Number(created.visitationHours) : vHours,
+        transferMiles: created.transferMiles !== undefined ? Number(created.transferMiles) : tMiles,
         displayOrder: created.displayOrder !== undefined ? Number(created.displayOrder) : dOrder,
         isCustom: true,
         funeralHomeId: targetHome
@@ -582,11 +587,12 @@ export function AdminDataProvider({ children }) {
     }
   }, [addToast, lang, selectedHomeId]);
 
-  const handleUpdateServicePackage = useCallback(async ({ packageId, packageName, packageName_es, category, category_es, itemizedServices, section1Price, section2Price, visitationHours, displayOrder, homeId }) => {
+  const handleUpdateServicePackage = useCallback(async ({ packageId, packageName, packageName_es, category, category_es, itemizedServices, section1Price, section2Price, visitationHours, transferMiles, displayOrder, homeId }) => {
     const targetHome = homeId || selectedHomeId;
     const s1 = Math.max(0, Number(section1Price) || 0);
     const s2 = Math.max(0, Number(section2Price) || 0);
     const vHours = visitationHours !== undefined ? Math.max(0, Number(visitationHours)) : 3;
+    const tMiles = transferMiles !== undefined ? Math.max(0, Number(transferMiles)) : 25;
     const dOrder = displayOrder !== undefined ? Math.max(0, Number(displayOrder)) : undefined;
 
     try {
@@ -600,6 +606,7 @@ export function AdminDataProvider({ children }) {
         section1Price: s1,
         section2Price: s2,
         visitationHours: vHours,
+        transferMiles: tMiles,
         ...(dOrder !== undefined ? { displayOrder: dOrder } : {}),
       };
 
@@ -617,6 +624,7 @@ export function AdminDataProvider({ children }) {
             section1Price: s1,
             section2Price: s2,
             visitationHours: vHours,
+            transferMiles: tMiles,
             ...(dOrder !== undefined ? { displayOrder: dOrder } : {}),
           });
         } catch {
@@ -640,6 +648,7 @@ export function AdminDataProvider({ children }) {
               section1Price: s1,
               section2Price: s2,
               visitationHours: vHours,
+              transferMiles: tMiles,
               displayOrder: dOrder !== undefined ? dOrder : (item.displayOrder !== undefined ? Number(item.displayOrder) : 0),
             };
           }
@@ -724,6 +733,13 @@ export function AdminDataProvider({ children }) {
     homeId,
     description = '',
     image = '',
+    manufacturer = '',
+    interiorFabricAndColor = '',
+    interiorFabricColor = '',
+    exteriorColor = '',
+    constructionAndType = '',
+    constructionType = '',
+    modelNumber = '',
     assignedFuneralHomeId,
     assignedPackages = [],
     isMandatory = false,
@@ -748,10 +764,13 @@ export function AdminDataProvider({ children }) {
           itemType: category === 'casket' ? 'CASKET' : 'ADDON',
           listPrice: priceNum,
           specifications: description,
-          interiorFabricColor: itemData.interiorFabricColor || '',
-          exteriorColor: itemData.exteriorColor || '',
-          constructionType: itemData.constructionType || '',
-          modelNumber: itemData.modelNumber || '',
+          manufacturer: manufacturer.trim(),
+          interiorFabricAndColor: (interiorFabricAndColor || interiorFabricColor || '').trim(),
+          interiorFabricColor: (interiorFabricAndColor || interiorFabricColor || '').trim(),
+          exteriorColor: exteriorColor.trim(),
+          constructionAndType: (constructionAndType || constructionType || '').trim(),
+          constructionType: (constructionAndType || constructionType || '').trim(),
+          modelNumber: modelNumber.trim(),
           imageUrl: image,
           funeralHomeId: targetHome,
           assignedFuneralHomeId: targetHome,
@@ -791,10 +810,13 @@ export function AdminDataProvider({ children }) {
           category: type || 'Guaranteed',
           description: description || 'Custom catalog model',
           specifications: description || 'Custom catalog model',
-          interiorFabricColor: itemData.interiorFabricColor || '',
-          exteriorColor: itemData.exteriorColor || '',
-          constructionType: itemData.constructionType || '',
-          modelNumber: itemData.modelNumber || '',
+          manufacturer: manufacturer.trim(),
+          interiorFabricAndColor: (interiorFabricAndColor || interiorFabricColor || '').trim(),
+          interiorFabricColor: (interiorFabricAndColor || interiorFabricColor || '').trim(),
+          exteriorColor: exteriorColor.trim(),
+          constructionAndType: (constructionAndType || constructionType || '').trim(),
+          constructionType: (constructionAndType || constructionType || '').trim(),
+          modelNumber: modelNumber.trim(),
           image: image || '',
           imageUrl: image || '',
           taxable: true
@@ -863,8 +885,11 @@ export function AdminDataProvider({ children }) {
           if (updates.specifications !== undefined || updates.description !== undefined) {
             patchPayload.specifications = updates.specifications || updates.description;
           }
+          if (updates.manufacturer !== undefined) patchPayload.manufacturer = updates.manufacturer;
+          if (updates.interiorFabricAndColor !== undefined) patchPayload.interiorFabricAndColor = updates.interiorFabricAndColor;
           if (updates.interiorFabricColor !== undefined) patchPayload.interiorFabricColor = updates.interiorFabricColor;
           if (updates.exteriorColor !== undefined) patchPayload.exteriorColor = updates.exteriorColor;
+          if (updates.constructionAndType !== undefined) patchPayload.constructionAndType = updates.constructionAndType;
           if (updates.constructionType !== undefined) patchPayload.constructionType = updates.constructionType;
           if (updates.modelNumber !== undefined) patchPayload.modelNumber = updates.modelNumber;
           if (updates.image !== undefined) patchPayload.imageUrl = updates.image;
@@ -916,9 +941,12 @@ export function AdminDataProvider({ children }) {
               isActive: updates.isActive !== undefined ? Boolean(updates.isActive) : (newPrice > 0),
               description: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : c.description),
               specifications: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : c.description),
-              interiorFabricColor: updates.interiorFabricColor !== undefined ? updates.interiorFabricColor : c.interiorFabricColor,
+              manufacturer: updates.manufacturer !== undefined ? updates.manufacturer : (c.manufacturer || ''),
+              interiorFabricAndColor: updates.interiorFabricAndColor !== undefined ? updates.interiorFabricAndColor : (updates.interiorFabricColor !== undefined ? updates.interiorFabricColor : (c.interiorFabricAndColor || c.interiorFabricColor || '')),
+              interiorFabricColor: updates.interiorFabricColor !== undefined ? updates.interiorFabricColor : (updates.interiorFabricAndColor !== undefined ? updates.interiorFabricAndColor : (c.interiorFabricColor || c.interiorFabricAndColor || '')),
               exteriorColor: updates.exteriorColor !== undefined ? updates.exteriorColor : c.exteriorColor,
-              constructionType: updates.constructionType !== undefined ? updates.constructionType : c.constructionType,
+              constructionAndType: updates.constructionAndType !== undefined ? updates.constructionAndType : (updates.constructionType !== undefined ? updates.constructionType : (c.constructionAndType || c.constructionType || '')),
+              constructionType: updates.constructionType !== undefined ? updates.constructionType : (updates.constructionAndType !== undefined ? updates.constructionAndType : (c.constructionType || c.constructionAndType || '')),
               modelNumber: updates.modelNumber !== undefined ? updates.modelNumber : c.modelNumber,
               image: updates.image !== undefined ? updates.image : c.image,
               imageUrl: updates.image !== undefined ? updates.image : c.image,

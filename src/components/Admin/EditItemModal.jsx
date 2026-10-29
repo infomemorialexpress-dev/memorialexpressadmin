@@ -18,6 +18,7 @@ export default function EditItemModal({
   const [name, setName] = useState('');
   const [itemName_es, setItemName_es] = useState('');
   const [price, setPrice] = useState('');
+  const [manufacturer, setManufacturer] = useState('');
   const [specifications, setSpecifications] = useState('');
   const [interiorFabricColor, setInteriorFabricColor] = useState('');
   const [exteriorColor, setExteriorColor] = useState('');
@@ -144,10 +145,11 @@ export default function EditItemModal({
       setName(item.name || '');
       setItemName_es(item.itemName_es || item.name_es || '');
       setPrice(item.price !== undefined ? item.price : (item.listPrice !== undefined ? item.listPrice : ''));
+      setManufacturer(item.manufacturer || '');
       setSpecifications(item.specifications || item.description || '');
-      setInteriorFabricColor(item.interiorFabricColor || item.interior || '');
+      setInteriorFabricColor(item.interiorFabricAndColor || item.interiorFabricColor || item.interior || '');
       setExteriorColor(item.exteriorColor || item.exterior || item.color || '');
-      setConstructionType(item.constructionType || item.construction || item.material || '');
+      setConstructionType(item.constructionAndType || item.constructionType || item.construction || item.material || '');
       setModelNumber(item.modelNumber || item.model || '');
       setImage(item.imageUrl || item.image || '');
 
@@ -171,6 +173,7 @@ export default function EditItemModal({
     } else {
       setName('');
       setPrice('');
+      setManufacturer('');
       setSpecifications('');
       setInteriorFabricColor('');
       setExteriorColor('');
@@ -275,10 +278,13 @@ export default function EditItemModal({
         itemName_es: itemName_es.trim(),
         name_es: itemName_es.trim(),
         price: resolvedPrice,
+        manufacturer: manufacturer.trim(),
         specifications: specifications.trim() || [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
         description: specifications.trim() || [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
+        interiorFabricAndColor: interiorFabricColor.trim(),
         interiorFabricColor: interiorFabricColor.trim(),
         exteriorColor: exteriorColor.trim(),
+        constructionAndType: constructionType.trim(),
         constructionType: constructionType.trim(),
         modelNumber: modelNumber.trim(),
         image: isCasket ? image : '',
@@ -648,6 +654,14 @@ export default function EditItemModal({
 
           {isCasket && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div style={{ gridColumn: 'span 2' }}>
+                <InputField
+                  label={lang === 'es' ? 'Fabricante' : 'Manufacturer'}
+                  placeholder="e.g. Matthews Aurora / Batesville"
+                  value={manufacturer}
+                  onChange={(e) => setManufacturer(e.target.value)}
+                />
+              </div>
               <InputField
                 label={lang === 'es' ? 'Tela y Color Interior' : 'Interior Fabric & Color'}
                 placeholder="e.g. Ivory Velvet Interior"

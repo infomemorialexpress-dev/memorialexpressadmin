@@ -20,6 +20,7 @@ export default function AddItemModal({
   const [itemName_es, setItemName_es] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState(defaultCategory);
+  const [manufacturer, setManufacturer] = useState('');
   const [description, setDescription] = useState('');
   const [interiorFabricColor, setInteriorFabricColor] = useState('');
   const [exteriorColor, setExteriorColor] = useState('');
@@ -146,7 +147,12 @@ export default function AddItemModal({
       setName('');
       setItemName_es('');
       setPrice('');
+      setManufacturer('');
       setDescription('');
+      setInteriorFabricColor('');
+      setExteriorColor('');
+      setConstructionType('');
+      setModelNumber('');
       setImage('');
       setAssignedPackages([]);
       setIsMandatory(false);
@@ -259,10 +265,13 @@ export default function AddItemModal({
         ? destinations.filter(d => (d.name || '').trim())
         : [],
       type: category === 'addon' ? type : 'Guaranteed',
+      manufacturer: manufacturer.trim(),
       description: description || [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
       specifications: [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
+      interiorFabricAndColor: interiorFabricColor.trim(),
       interiorFabricColor: interiorFabricColor.trim(),
       exteriorColor: exteriorColor.trim(),
+      constructionAndType: constructionType.trim(),
       constructionType: constructionType.trim(),
       modelNumber: modelNumber.trim(),
       image: category === 'casket' ? image : ''
@@ -631,6 +640,14 @@ export default function AddItemModal({
 
           {category === 'casket' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div style={{ gridColumn: 'span 2' }}>
+                <InputField
+                  label={lang === 'es' ? 'Fabricante' : 'Manufacturer'}
+                  placeholder="e.g. Matthews Aurora / Batesville"
+                  value={manufacturer}
+                  onChange={(e) => setManufacturer(e.target.value)}
+                />
+              </div>
               <InputField
                 label={lang === 'es' ? 'Tela y Color Interior' : 'Interior Fabric & Color'}
                 placeholder="e.g. Ivory Velvet Interior"

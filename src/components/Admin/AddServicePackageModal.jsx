@@ -22,6 +22,7 @@ export default function AddServicePackageModal({
   // Itemized Services Breakdown state
   const [arrangements, setArrangements] = useState('2050');
   const [transfer, setTransfer] = useState('695');
+  const [transferMiles, setTransferMiles] = useState('25');
   const [embalming, setEmbalming] = useState('525');
   const [otherPreparation, setOtherPreparation] = useState('200');
   const [visitation, setVisitation] = useState('300');
@@ -145,6 +146,7 @@ export default function AddServicePackageModal({
           : (editingPackage.s2 ?? 0);
         setSection2Price(String(s2));
         setVisitationHours(String(editingPackage.visitationHours ?? '3'));
+        setTransferMiles(String(editingPackage.transferMiles ?? '25'));
         setDisplayOrder(String(editingPackage.displayOrder !== undefined && editingPackage.displayOrder !== null ? editingPackage.displayOrder : '1'));
       } else {
         // Reset to default new package baseline
@@ -155,6 +157,7 @@ export default function AddServicePackageModal({
         setDisplayOrder('1');
         setArrangements('2050');
         setTransfer('695');
+        setTransferMiles('25');
         setEmbalming('525');
         setOtherPreparation('200');
         setVisitation('300');
@@ -174,6 +177,7 @@ export default function AddServicePackageModal({
         setPackageSavings('1000');
         setSection2Price('0');
         setVisitationHours('3');
+        setTransferMiles('25');
       }
       setError('');
     }
@@ -181,8 +185,8 @@ export default function AddServicePackageModal({
 
   if (!isOpen) return null;
 
-  const isDuplicate = Boolean(editingPackage?.isDuplicate);
-  const isEditing = Boolean(editingPackage && !isDuplicate);
+  const isDuplicate = Boolean(editingPackage?.isDuplicate || editingPackage?.isEdit === false);
+  const isEditing = Boolean(editingPackage && !isDuplicate && editingPackage.isEdit !== false);
 
   // Helper for numeric aggregation: ignore non-numeric strings (e.g. "incl", "n/a") as 0
   const parseNum = (val) => {
@@ -274,6 +278,7 @@ export default function AddServicePackageModal({
         section1Price: totalSection1,
         section2Price: numSection2,
         visitationHours: Math.max(0, Number(visitationHours) || 3),
+        transferMiles: Math.max(0, Number(transferMiles) || 25),
         homeId: locationId
       };
 
@@ -418,13 +423,26 @@ export default function AddServicePackageModal({
                 onChange={(e) => setArrangements(e.target.value)}
               />
 
-              <InputField
-                label={lang === 'es' ? 'Traslado (25 millas) ($)' : 'Transfer (25 miles) ($)'}
-                type="text"
-                placeholder="695"
-                value={transfer}
-                onChange={(e) => setTransfer(e.target.value)}
-              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px', gap: '12px', alignItems: 'flex-start' }}>
+                <InputField
+                  label={lang === 'es' ? `Traslado (${transferMiles || 25} millas) ($)` : `Transfer (${transferMiles || 25} miles) ($)`}
+                  type="text"
+                  placeholder="695"
+                  value={transfer}
+                  onChange={(e) => setTransfer(e.target.value)}
+                />
+
+                <InputField
+                  label={lang === 'es' ? 'Millas' : 'Miles'}
+                  type="number"
+                  min="0"
+                  step="5"
+                  placeholder="25"
+                  value={transferMiles}
+                  onChange={(e) => setTransferMiles(e.target.value)}
+                  hint={lang === 'es' ? 'Distancia' : 'Radius'}
+                />
+              </div>
 
               <InputField
                 label={lang === 'es' ? 'Embalsamamiento / refrigeración ($)' : 'Embalming / refrigeration ($)'}
