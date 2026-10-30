@@ -156,7 +156,7 @@ export default function EditItemModal({
       const homeVal = item.assignedFuneralHomeId || item.funeralHomeId || item.home || '*';
       setAssignedFuneralHomeId(homeVal);
 
-      setAssignedPackages(Array.isArray(item.assignedPackages) ? item.assignedPackages : []);
+      setAssignedPackages(Array.isArray(item?.assignedPackages) ? item.assignedPackages : []);
       setIsMandatory(Boolean(item.isMandatory));
       setIsFixedPrice(Boolean(item.isFixedPrice));
       setType(item.type || 'Guaranteed');

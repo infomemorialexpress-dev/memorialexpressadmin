@@ -270,9 +270,9 @@ export default function PricingManagementPage() {
                               )}
                               <div>
                                 <div className="item-primary-name">{casket.name}</div>
-                                {casket.assignedPackages?.length > 0 && (
+                                {Array.isArray(casket?.assignedPackages) && casket.assignedPackages.length > 0 && (
                                   <div style={{ fontSize: 11, color: '#64748b' }}>
-                                    📦 {casket.assignedPackages.join(', ')}
+                                    📦 {casket.assignedPackages.map(p => typeof p === 'object' ? (p.name || p.packageName || p._id || p.id) : p).filter(Boolean).join(', ')}
                                   </div>
                                 )}
                               </div>

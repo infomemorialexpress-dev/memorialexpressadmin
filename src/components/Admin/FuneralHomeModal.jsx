@@ -32,7 +32,10 @@ export default function FuneralHomeModal({
   const [branchName, setBranchName] = useState('');
   const [branchAddress, setBranchAddress] = useState('');
   const [branchCity, setBranchCity] = useState('');
+  const [branchZip, setBranchZip] = useState('');
+  const [branchCounty, setBranchCounty] = useState('');
   const [branchPhone, setBranchPhone] = useState('');
+  const [branchNote, setBranchNote] = useState('');
 
   const [chapelCity, setChapelCity] = useState('');
   const [chapelZip, setChapelZip] = useState('');
@@ -69,7 +72,10 @@ export default function FuneralHomeModal({
               branchName: b.branchName || b.name || '',
               streetAddress: b.streetAddress || b.address || '',
               city: b.city || '',
-              phone: b.phone || ''
+              zipCode: b.zipCode || b.zip || '',
+              county: b.county || '',
+              phone: b.phone || '',
+              briefNote: b.briefNote || b.note || ''
             }))
           : [],
         locations: chapelsList.map(c => ({
@@ -101,7 +107,10 @@ export default function FuneralHomeModal({
     setBranchName('');
     setBranchAddress('');
     setBranchCity('');
+    setBranchZip('');
+    setBranchCounty('');
     setBranchPhone('');
+    setBranchNote('');
     setChapelCity('');
     setChapelZip('');
     setChapelCounty('');
@@ -124,7 +133,10 @@ export default function FuneralHomeModal({
       branchName: branchName.trim(),
       streetAddress: branchAddress.trim(),
       city: branchCity.trim(),
+      zipCode: branchZip.trim(),
+      county: branchCounty.trim(),
       phone: branchPhone.trim(),
+      briefNote: branchNote.trim(),
     };
     setFormData(prev => ({
       ...prev,
@@ -133,7 +145,10 @@ export default function FuneralHomeModal({
     setBranchName('');
     setBranchAddress('');
     setBranchCity('');
+    setBranchZip('');
+    setBranchCounty('');
     setBranchPhone('');
+    setBranchNote('');
   };
 
   const handleRemoveBranch = (indexToRemove) => {
@@ -316,7 +331,10 @@ export default function FuneralHomeModal({
           branchName: b.branchName.trim(),
           streetAddress: (b.streetAddress || '').trim(),
           city: (b.city || '').trim(),
-          phone: (b.phone || '').trim()
+          zipCode: (b.zipCode || '').trim(),
+          county: (b.county || '').trim(),
+          phone: (b.phone || '').trim(),
+          briefNote: (b.briefNote || '').trim()
         }));
 
       const payload = {
@@ -698,9 +716,14 @@ export default function FuneralHomeModal({
                         <strong style={{ fontSize: '13.5px', color: '#1e293b' }}>{b.branchName}</strong>
                       </div>
                       <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '2px' }}>
-                        {b.streetAddress && <span>📍 {b.streetAddress}{b.city ? `, ${b.city}` : ''}</span>}
-                        {!b.streetAddress && b.city && <span>📍 {b.city}</span>}
+                        {(b.streetAddress || b.city || b.zipCode) && (
+                          <span>
+                            📍 {[b.streetAddress, b.city, b.zipCode].filter(Boolean).join(', ')}
+                            {b.county ? ` (${b.county})` : ''}
+                          </span>
+                        )}
                         {b.phone && <span>📞 {b.phone}</span>}
+                        {b.briefNote && <span style={{ fontStyle: 'italic', color: '#0369a1' }}>📝 {b.briefNote}</span>}
                       </div>
                     </div>
                     <button
@@ -746,7 +769,7 @@ export default function FuneralHomeModal({
                 <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569' }}>
                   + {lang === 'es' ? 'Nueva Sucursal' : 'Add New Branch'} ({(formData.branches?.length || 0) + 1}/4)
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
                   <input
                     type="text"
                     placeholder={lang === 'es' ? 'Nombre de la Sucursal (ej. Downey Branch)*' : 'Branch Name (e.g. Downey Branch)*'}
@@ -770,9 +793,30 @@ export default function FuneralHomeModal({
                   />
                   <input
                     type="text"
+                    placeholder={lang === 'es' ? 'Código Postal (ej. 90240)' : 'Zip Code (e.g. 90240)'}
+                    value={branchZip}
+                    onChange={(e) => setBranchZip(e.target.value)}
+                    style={{ padding: '8px 10px', fontSize: '13px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder={lang === 'es' ? 'Condado (ej. Los Angeles)' : 'County (e.g. Los Angeles)'}
+                    value={branchCounty}
+                    onChange={(e) => setBranchCounty(e.target.value)}
+                    style={{ padding: '8px 10px', fontSize: '13px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <input
+                    type="text"
                     placeholder={lang === 'es' ? 'Teléfono (ej. 562-294-4400)' : 'Phone (e.g. 562-294-4400)'}
                     value={branchPhone}
                     onChange={(e) => setBranchPhone(e.target.value)}
+                    style={{ padding: '8px 10px', fontSize: '13px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder={lang === 'es' ? 'Nota Breve (ej. Solo con cita previa)' : 'Brief Note (e.g. By appointment only)'}
+                    value={branchNote}
+                    onChange={(e) => setBranchNote(e.target.value)}
                     style={{ padding: '8px 10px', fontSize: '13px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                   />
                 </div>
