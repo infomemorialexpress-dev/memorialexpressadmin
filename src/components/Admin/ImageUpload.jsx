@@ -1,69 +1,15 @@
 import React, { useState, useRef } from 'react';
-
-/**
- * Resizes and compresses an image file using an offscreen canvas
- * Converts large phone/camera photos down to lightweight high-res JPEGs (~150KB)
- */
-function compressImage(file, maxWidth = 1280, maxHeight = 1280, quality = 0.82) {
-  return new Promise((resolve, reject) => {
-    if (file.type === 'image/svg+xml') {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth || height > maxHeight) {
-          if (width > height) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          } else {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(e.target.result);
-          return;
-        }
-
-        // Draw white background in case of transparent PNG
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-        resolve(compressedDataUrl);
-      };
-      img.onerror = () => reject(new Error('Failed to load image for compression'));
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+import api from '../../services/api.js';
 
 export default function ImageUpload({
   label = 'Funeral Home Image',
   value = '',
   onChange,
-  hint = 'Upload a photo of the funeral home facade, chapel, or facility logo (JPEG, PNG, WebP up to 10MB).'
+  hint = 'Upload a photo (JPEG, PNG, WebP up to 10MB).'
 }) {
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef(null);
 
@@ -76,37 +22,84 @@ export default function ImageUpload({
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      setUploadError('Image size exceeds 15MB. Please choose a smaller photo.');
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('Image size exceeds 20MB. Please choose a smaller photo.');
       return;
     }
 
+    setIsUploading(true);
+    setUploadProgress(15);
+
     try {
-      const compressedDataUrl = await compressImage(file, 1280, 1280, 0.82);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      let response;
+      try {
+        // Preferred image endpoint with Cloudinary adaptive storage
+        response = await api.post('/upload/image', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percent = Math.min(95, Math.round((progressEvent.loaded * 90) / progressEvent.total));
+              setUploadProgress(percent);
+            }
+          },
+        });
+      } catch (errPrimary) {
+        console.warn('[ImageUpload] /upload/image failed, attempting fallback /upload endpoint:', errPrimary);
+        // Fallback to generic upload endpoint
+        response = await api.post('/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      }
+
+      const uploadedUrl =
+        response?.data?.secure_url ||
+        response?.data?.fileUrl ||
+        response?.data?.url;
+
+      if (!uploadedUrl) {
+        throw new Error('Upload succeeded on server, but no valid image URL was returned.');
+      }
+
+      setUploadProgress(100);
       if (onChange) {
-        onChange(compressedDataUrl);
+        onChange(uploadedUrl);
       }
     } catch (err) {
-      console.warn('[ImageUpload] Compression fallback:', err);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (onChange) onChange(e.target.result);
-      };
-      reader.onerror = () => {
-        setUploadError('Failed to read image file. Please try another image.');
-      };
-      reader.readAsDataURL(file);
+      console.error('[ImageUpload] Failed to upload image:', err);
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.userMessage ||
+        err?.message ||
+        'Failed to upload image. Please check your network connection and try again.';
+      setUploadError(errMsg);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
-    handleProcessFile(file);
+    if (file) {
+      handleProcessFile(file);
+    }
   };
 
   const handleDragOver = (e) => {
     e.preventDefault();
-    setIsDragging(true);
+    if (!isUploading) {
+      setIsDragging(true);
+    }
   };
 
   const handleDragLeave = (e) => {
@@ -117,8 +110,11 @@ export default function ImageUpload({
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
+    if (isUploading) return;
     const file = e.dataTransfer.files?.[0];
-    handleProcessFile(file);
+    if (file) {
+      handleProcessFile(file);
+    }
   };
 
   const handleRemove = (e) => {
@@ -137,11 +133,43 @@ export default function ImageUpload({
         <span>{label}</span>
       </label>
 
-      {value ? (
+      {isUploading ? (
+        <div
+          className="image-dropzone uploading"
+          style={{
+            cursor: 'wait',
+            borderColor: '#183655',
+            backgroundColor: '#f1f5f9',
+            padding: '28px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              border: '3px solid #cbd5e1',
+              borderTopColor: '#183655',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+            }}
+          />
+          <div className="dropzone-text" style={{ textAlign: 'center' }}>
+            <span className="dropzone-main" style={{ color: '#183655' }}>
+              Uploading to Cloudinary... {uploadProgress > 0 ? `${uploadProgress}%` : ''}
+            </span>
+            <span className="dropzone-sub">Securing and optimizing image in the cloud</span>
+          </div>
+        </div>
+      ) : value ? (
         <div className="image-preview-card">
           <img
             src={value}
-            alt="Funeral home facility preview"
+            alt="Preview"
             className="uploaded-preview-img"
           />
           <div className="image-preview-overlay">
@@ -183,7 +211,7 @@ export default function ImageUpload({
               Click to browse or drag & drop photo
             </span>
             <span className="dropzone-sub">
-              PNG, JPG, SVG, WebP up to 4MB
+              PNG, JPG, SVG, WebP up to 20MB
             </span>
           </div>
         </div>
@@ -195,10 +223,11 @@ export default function ImageUpload({
         accept="image/*"
         onChange={handleFileChange}
         style={{ display: 'none' }}
+        disabled={isUploading}
       />
 
-      {hint && !uploadError && <div className="form-hint">{hint}</div>}
-      {uploadError && <div className="form-error">{uploadError}</div>}
+      {hint && !uploadError && !isUploading && <div className="form-hint">{hint}</div>}
+      {uploadError && <div className="form-error" style={{ color: '#ef4444', marginTop: 6, fontSize: '0.85rem' }}>⚠️ {uploadError}</div>}
     </div>
   );
 }

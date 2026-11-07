@@ -228,12 +228,12 @@ export default function FuneralHomeModal({
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      const returnedUrl = res.data?.fileUrl || res.data?.url;
+      const returnedUrl = res.data?.secure_url || res.data?.fileUrl || res.data?.url;
       if (!returnedUrl) {
         throw new Error('Upload completed but no file URL was returned.');
       }
 
-      // Prepend backend origin if relative path
+      // If returnedUrl is already an absolute Cloudinary/HTTP URL, use it directly
       const origin = (api.defaults.baseURL || '').replace(/\/api\/?$/, '');
       const fullUrl = returnedUrl.startsWith('http') ? returnedUrl : `${origin}${returnedUrl}`;
 
@@ -290,7 +290,7 @@ export default function FuneralHomeModal({
             headers: { 'Content-Type': 'multipart/form-data' }
           });
 
-          const returnedUrl = res.data?.fileUrl || res.data?.url;
+          const returnedUrl = res.data?.secure_url || res.data?.fileUrl || res.data?.url;
           if (returnedUrl) {
             const origin = (api.defaults.baseURL || '').replace(/\/api\/?$/, '');
             const fullUrl = returnedUrl.startsWith('http') ? returnedUrl : `${origin}${returnedUrl}`;
