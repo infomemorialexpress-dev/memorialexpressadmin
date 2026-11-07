@@ -104,7 +104,7 @@ export function AdminDataProvider({ children }) {
 
     // 1. Fetch live Services & Custom Packages
     Promise.allSettled([
-      api.get(`/catalog/location/${selectedHomeId}?type=SERVICE`),
+      api.get(`/catalog/location/${selectedHomeId}?itemType=SERVICE&type=SERVICE`),
       api.get(`/funeral-homes/${selectedHomeId}/packages`)
     ])
       .then(([catalogRes, packagesRes]) => {
@@ -206,7 +206,7 @@ export function AdminDataProvider({ children }) {
       });
 
     // 2. Fetch live Caskets
-    api.get(`/catalog/location/${selectedHomeId}?type=CASKET`)
+    api.get(`/catalog/location/${selectedHomeId}?itemType=CASKET&type=CASKET`)
       .then(res => {
         if (!mounted) return;
         const rawData = Array.isArray(res.data)
@@ -246,6 +246,7 @@ export function AdminDataProvider({ children }) {
               isFixedPrice: Boolean(item?.isFixedPrice),
               type: item?.type || 'Guaranteed',
               category: item?.category || item?.type || 'Guaranteed',
+              itemType: item?.itemType || 'CASKET',
               assignment: activeHome?.name || item?.assignment || 'Specific Location',
               taxable: true
             };
@@ -255,7 +256,7 @@ export function AdminDataProvider({ children }) {
       .catch(err => console.warn('Live caskets load failed:', err));
 
     // 3. Fetch live Add-ons
-    api.get(`/catalog/location/${selectedHomeId}?type=ADDON`)
+    api.get(`/catalog/location/${selectedHomeId}?itemType=ADDON&type=ADDON`)
       .then(res => {
         if (!mounted) return;
         const backendAddons = Array.isArray(res.data)
@@ -288,6 +289,7 @@ export function AdminDataProvider({ children }) {
                 destinations: Array.isArray(item.destinations) ? item.destinations : [],
                 type: item.type || 'Non-Guaranteed',
                 category: item.category || item.type || 'Non-Guaranteed',
+                itemType: item.itemType || 'ADDON',
                 assignment: activeHome?.name || item.assignment || 'Specific Location',
                 taxable: false
               }))
