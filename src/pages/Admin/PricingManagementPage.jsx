@@ -269,10 +269,10 @@ export default function PricingManagementPage() {
                                 </div>
                               )}
                               <div>
-                                <div className="item-primary-name">{casket.name}</div>
+                                <div className="item-primary-name">{casket?.name}</div>
                                 {Array.isArray(casket?.assignedPackages) && casket.assignedPackages.length > 0 && (
                                   <div style={{ fontSize: 11, color: '#64748b' }}>
-                                    📦 {casket.assignedPackages.map(p => typeof p === 'object' ? (p.name || p.packageName || p._id || p.id) : p).filter(Boolean).join(', ')}
+                                    📦 {casket.assignedPackages.map(p => typeof p === 'object' ? (p?.name || p?.packageName || p?._id || p?.id) : p).filter(Boolean).join(', ')}
                                   </div>
                                 )}
                               </div>
@@ -280,7 +280,13 @@ export default function PricingManagementPage() {
                           </td>
                           <td>
                             <div className="item-spec-text">
-                              {casket.specifications || casket.description || 'Standard funeral merchandise'}
+                              {[
+                                casket?.constructionAndType || casket?.constructionType,
+                                casket?.exteriorColor,
+                                casket?.interiorFabricAndColor || casket?.interiorFabricColor,
+                                casket?.manufacturer ? `Mfg: ${casket.manufacturer}` : '',
+                                casket?.modelNumber ? `Model: ${casket.modelNumber}` : ''
+                              ].filter(Boolean).join(' • ') || casket?.specifications || casket?.description || 'Standard funeral merchandise'}
                             </div>
                           </td>
                           <td>

@@ -209,34 +209,46 @@ export function AdminDataProvider({ children }) {
     api.get(`/catalog/location/${selectedHomeId}?type=CASKET`)
       .then(res => {
         if (!mounted) return;
-        const backendCaskets = Array.isArray(res.data)
+        const rawData = Array.isArray(res.data)
           ? res.data
-              .filter(item => item.listPrice !== null && item.listPrice !== undefined && Number(item.listPrice) > 0)
-              .map(item => ({
-                id: item._id || item.id,
-                _id: item._id || item.id,
-                name: item.name,
-                itemName_es: item.itemName_es || item.name_es || '',
-                name_es: item.itemName_es || item.name_es || '',
-                price: Number(item.listPrice),
-                listPrice: Number(item.listPrice),
-                isActive: Boolean(item.isActive && Number(item.listPrice) > 0),
-                description: item.specifications || '',
-                specifications: item.specifications || '',
-                image: item.imageUrl || '',
-                imageUrl: item.imageUrl || '',
-                home: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-                assignedFuneralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-                funeralHomeId: item.assignedFuneralHomeId || item.funeralHomeId || selectedHomeId,
-                assignedPackages: Array.isArray(item.assignedPackages) ? item.assignedPackages : [],
-                isMandatory: Boolean(item.isMandatory),
-                isFixedPrice: Boolean(item.isFixedPrice),
-                type: item.type || 'Guaranteed',
-                category: item.category || item.type || 'Guaranteed',
-                assignment: activeHome?.name || item.assignment || 'Specific Location',
-                taxable: true
-              }))
-          : [];
+          : (Array.isArray(res.data?.data) ? res.data.data : []);
+        const backendCaskets = rawData
+          .filter(item => item && (item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) > 0 : Number(item.price || 0) > 0))
+          .map(item => {
+            const listPriceNum = Number(item?.listPrice !== null && item?.listPrice !== undefined ? item.listPrice : (item?.price || 0));
+            return {
+              id: item?._id || item?.id,
+              _id: item?._id || item?.id,
+              name: item?.name || item?.itemName || '',
+              itemName: item?.itemName || item?.name || '',
+              itemName_es: item?.itemName_es || item?.name_es || '',
+              name_es: item?.itemName_es || item?.name_es || '',
+              price: listPriceNum,
+              listPrice: listPriceNum,
+              isActive: Boolean(item?.isActive !== false && listPriceNum > 0),
+              description: item?.specifications || item?.description || '',
+              specifications: item?.specifications || item?.description || '',
+              manufacturer: item?.manufacturer || '',
+              interiorFabricAndColor: item?.interiorFabricAndColor || item?.interiorFabricColor || item?.interior || '',
+              interiorFabricColor: item?.interiorFabricAndColor || item?.interiorFabricColor || item?.interior || '',
+              exteriorColor: item?.exteriorColor || item?.exterior || item?.color || '',
+              constructionAndType: item?.constructionAndType || item?.constructionType || item?.construction || item?.material || '',
+              constructionType: item?.constructionAndType || item?.constructionType || item?.construction || item?.material || '',
+              modelNumber: item?.modelNumber || item?.model || '',
+              image: item?.imageUrl || item?.image || '',
+              imageUrl: item?.imageUrl || item?.image || '',
+              home: item?.assignedFuneralHomeId || item?.funeralHomeId || selectedHomeId,
+              assignedFuneralHomeId: item?.assignedFuneralHomeId || item?.funeralHomeId || selectedHomeId,
+              funeralHomeId: item?.assignedFuneralHomeId || item?.funeralHomeId || selectedHomeId,
+              assignedPackages: Array.isArray(item?.assignedPackages) ? item.assignedPackages : [],
+              isMandatory: Boolean(item?.isMandatory),
+              isFixedPrice: Boolean(item?.isFixedPrice),
+              type: item?.type || 'Guaranteed',
+              category: item?.category || item?.type || 'Guaranteed',
+              assignment: activeHome?.name || item?.assignment || 'Specific Location',
+              taxable: true
+            };
+          });
         setAdminDb(prev => ({ ...prev, caskets: backendCaskets }));
       })
       .catch(err => console.warn('Live caskets load failed:', err));
