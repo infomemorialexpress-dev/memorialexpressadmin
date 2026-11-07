@@ -3721,10 +3721,18 @@ p.page-subtitle {
   border-radius: 16px;
   width: 100%;
   max-width: 620px;
-  max-height: 92vh;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+}
+
+.agent-modal-card > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -3773,6 +3781,8 @@ p.page-subtitle {
 .agent-modal-body {
   padding: 22px 28px;
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;

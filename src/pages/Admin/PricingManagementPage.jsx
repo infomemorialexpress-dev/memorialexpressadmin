@@ -83,6 +83,57 @@ export default function PricingManagementPage() {
     return matchesHome;
   });
 
+  const resolvePackageName = (pkgIdentifier) => {
+    if (!pkgIdentifier) return '';
+    if (typeof pkgIdentifier === 'object') {
+      return pkgIdentifier.packageName || pkgIdentifier.name || '';
+    }
+    const str = String(pkgIdentifier).trim();
+
+    // 1. Check in activeHome's servicePackages
+    const homePackages = activeHome?.servicePackages || [];
+    const matchedInActiveHome = homePackages.find(
+      sp => String(sp._id || sp.id) === str || sp.name === str || sp.packageName === str
+    );
+    if (matchedInActiveHome) {
+      return matchedInActiveHome.name || matchedInActiveHome.packageName || '';
+    }
+
+    // 2. Check across all homes in adminDb.homes
+    for (const h of (adminDb?.homes || [])) {
+      const matchInHome = (h?.servicePackages || []).find(
+        sp => String(sp._id || sp.id) === str || sp.name === str || sp.packageName === str
+      );
+      if (matchInHome) {
+        return matchInHome.name || matchInHome.packageName || '';
+      }
+    }
+
+    // 3. Check in serviceItems array
+    const matchedService = (serviceItems || []).find(
+      s => String(s._id || s.id) === str || String(s.packageId) === str || s.name === str || s.packageName === str
+    );
+    if (matchedService) {
+      return matchedService.packageName || matchedService.name || '';
+    }
+
+    // 4. Check in adminDb.packages map
+    if (adminDb?.packages) {
+      for (const [key, pkg] of Object.entries(adminDb.packages)) {
+        if (key.includes(str) || String(pkg?.catalogId) === str || String(pkg?.serviceId) === str || String(pkg?.id) === str) {
+          return pkg?.name || pkg?.packageName || '';
+        }
+      }
+    }
+
+    // 5. If it looks like a Mongo ObjectId (24 hex characters), do not display raw hex hash
+    if (/^[0-9a-fA-F]{24}$/.test(str)) {
+      return '';
+    }
+
+    return str;
+  };
+
   const handleOpenEditModal = (item, type = 'casket') => {
     setEditingItem(item);
     setEditingItemType(type);
@@ -285,11 +336,17 @@ export default function PricingManagementPage() {
                               )}
                               <div>
                                 <div className="item-primary-name">{casket?.name}</div>
-                                {Array.isArray(casket?.assignedPackages) && casket.assignedPackages.length > 0 && (
-                                  <div style={{ fontSize: 11, color: '#64748b' }}>
-                                    📦 {casket.assignedPackages.map(p => typeof p === 'object' ? (p?.name || p?.packageName || p?._id || p?.id) : p).filter(Boolean).join(', ')}
-                                  </div>
-                                )}
+                                {Array.isArray(casket?.assignedPackages) && casket.assignedPackages.length > 0 && (() => {
+                                  const resolvedPackageNames = casket.assignedPackages
+                                    .map(resolvePackageName)
+                                    .filter(Boolean);
+                                  if (resolvedPackageNames.length === 0) return null;
+                                  return (
+                                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                                      📦 {resolvedPackageNames.join(', ')}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </td>

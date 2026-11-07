@@ -268,14 +268,6 @@ export default function AgentsManagement() {
                               <span>📞</span> {agent.phone}
                             </div>
                           )}
-                          <div className="agent-contact-pass">
-                            <span className="agent-contact-pass-label">
-                              🔑 {lang === 'es' ? 'Clave:' : 'Pass:'}
-                            </span>
-                            <span className="agent-contact-pass-chip">
-                              {agent.password || 'Agent1234!'}
-                            </span>
-                          </div>
                         </div>
                       </td>
 

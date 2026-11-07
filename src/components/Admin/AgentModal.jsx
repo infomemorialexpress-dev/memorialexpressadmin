@@ -167,9 +167,15 @@ export default function AgentModal({
       <div
         className="agent-modal-card"
         onClick={(e) => e.stopPropagation()}
+        style={{
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
+        }}
       >
         {/* Header */}
-        <div className="agent-modal-header">
+        <div className="agent-modal-header" style={{ flexShrink: 0 }}>
           <div>
             <h2 className="agent-modal-title">
               {isEditing
@@ -193,8 +199,24 @@ export default function AgentModal({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit}>
-          <div className="agent-modal-body">
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden'
+          }}
+        >
+          <div
+            className="agent-modal-body"
+            style={{
+              overflowY: 'auto',
+              flex: 1,
+              minHeight: 0
+            }}
+          >
             {formError && (
               <div style={{
                 background: '#fef2f2',
@@ -459,7 +481,7 @@ export default function AgentModal({
           </div>
 
           {/* Modal Footer */}
-          <div className="agent-modal-footer">
+          <div className="agent-modal-footer" style={{ flexShrink: 0 }}>
             <button
               type="button"
               className="btn-modal-cancel"
