@@ -213,9 +213,10 @@ export function AdminDataProvider({ children }) {
           ? res.data
           : (Array.isArray(res.data?.data) ? res.data.data : []);
         const backendCaskets = rawData
-          .filter(item => item && (item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) > 0 : Number(item.price || 0) > 0))
+          .filter(Boolean)
           .map(item => {
-            const listPriceNum = Number(item?.listPrice !== null && item?.listPrice !== undefined ? item.listPrice : (item?.price || 0));
+            const rawPrice = item?.listPrice !== null && item?.listPrice !== undefined ? item.listPrice : item?.price;
+            const listPriceNum = rawPrice !== null && rawPrice !== undefined && rawPrice !== '' ? Number(rawPrice) : null;
             return {
               id: item?._id || item?.id,
               _id: item?._id || item?.id,
@@ -223,9 +224,9 @@ export function AdminDataProvider({ children }) {
               itemName: item?.itemName || item?.name || '',
               itemName_es: item?.itemName_es || item?.name_es || '',
               name_es: item?.itemName_es || item?.name_es || '',
-              price: listPriceNum,
-              listPrice: listPriceNum,
-              isActive: Boolean(item?.isActive !== false && listPriceNum > 0),
+              price: listPriceNum !== null ? listPriceNum : null,
+              listPrice: listPriceNum !== null ? listPriceNum : null,
+              isActive: Boolean(item?.isActive !== false && listPriceNum !== null && listPriceNum > 0),
               description: item?.specifications || item?.description || '',
               specifications: item?.specifications || item?.description || '',
               manufacturer: item?.manufacturer || '',

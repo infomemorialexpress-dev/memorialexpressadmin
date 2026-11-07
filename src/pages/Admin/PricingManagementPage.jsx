@@ -51,21 +51,36 @@ export default function PricingManagementPage() {
   const homes = adminDb?.homes || [];
   const currentHomeId = selectedHomeId || homes[0]?._id || homes[0]?.id || '';
 
-  // Filter caskets exclusively for this location that actually exist with valid price
+  // Filter caskets for this location (items returned by API for this location, including unpriced and legacy)
   const visibleCaskets = (adminDb.caskets || []).filter((c) => {
+    if (!c) return false;
     const itemHome = c.funeralHomeId || c.assignedFuneralHomeId || c.home;
-    const matchesHome = String(itemHome) === String(currentHomeId);
-    const hasValidPrice = c.price !== null && c.price !== undefined && Number(c.price) > 0;
-    return matchesHome && hasValidPrice;
+    const matchesHome =
+      !itemHome ||
+      itemHome === '*' ||
+      itemHome === 'all' ||
+      itemHome === 'Global (*)' ||
+      !currentHomeId ||
+      String(itemHome) === String(currentHomeId) ||
+      String(itemHome).toLowerCase() === String(currentHomeId).toLowerCase() ||
+      (activeHome?.name && String(itemHome).toLowerCase() === String(activeHome.name).toLowerCase());
+    return matchesHome;
   });
 
-  // Filter addons exclusively for this location that actually exist with valid price (>= 0) or destinations
+  // Filter addons for this location (items returned by API for this location, including unpriced)
   const visibleAddons = (adminDb.addons || []).filter((a) => {
+    if (!a) return false;
     const itemHome = a.funeralHomeId || a.assignedFuneralHomeId || a.home;
-    const matchesHome = String(itemHome) === String(currentHomeId);
-    const hasDest = Boolean(a.hasDestinations && Array.isArray(a.destinations) && a.destinations.length > 0);
-    const hasValidPrice = (a.price !== null && a.price !== undefined && Number(a.price) >= 0) || hasDest;
-    return matchesHome && hasValidPrice;
+    const matchesHome =
+      !itemHome ||
+      itemHome === '*' ||
+      itemHome === 'all' ||
+      itemHome === 'Global (*)' ||
+      !currentHomeId ||
+      String(itemHome) === String(currentHomeId) ||
+      String(itemHome).toLowerCase() === String(currentHomeId).toLowerCase() ||
+      (activeHome?.name && String(itemHome).toLowerCase() === String(activeHome.name).toLowerCase());
+    return matchesHome;
   });
 
   const handleOpenEditModal = (item, type = 'casket') => {
