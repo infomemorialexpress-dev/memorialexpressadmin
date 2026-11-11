@@ -373,7 +373,9 @@ export default function EditItemModal({
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               disabled={!isCasket && hasDestinations}
-              hint={(!isCasket && hasDestinations) ? (lang === 'es' ? 'Determinado por los destinos abajo' : 'Determined by the destinations below') : ''}
+              hint={(!isCasket && hasDestinations)
+                ? (lang === 'es' ? 'Determinado por los destinos abajo' : 'Determined by the destinations below')
+                : (lang === 'es' ? 'Ingrese 0 para mostrar como INCL (Incluido)' : 'Enter 0 to display as INCL (Included)')}
               required={isCasket || !hasDestinations}
             />
           </div>

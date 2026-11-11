@@ -335,7 +335,9 @@ export default function AddItemModal({
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               disabled={hasDestinations}
-              hint={hasDestinations ? (lang === 'es' ? 'Determinado por el destino seleccionado abajo' : 'Determined by the destination selected below') : ''}
+              hint={hasDestinations
+                ? (lang === 'es' ? 'Determinado por el destino seleccionado abajo' : 'Determined by the destination selected below')
+                : (lang === 'es' ? 'Ingrese 0 para mostrar como INCL (Incluido)' : 'Enter 0 to display as INCL (Included)')}
               required={!hasDestinations}
             />
           </div>

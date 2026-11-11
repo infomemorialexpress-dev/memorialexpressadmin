@@ -145,8 +145,8 @@ export default function AddServicePackageModal({
           ? editingPackage.section2Price
           : (editingPackage.s2 ?? 0);
         setSection2Price(String(s2));
-        setVisitationHours(String(editingPackage.visitationHours ?? '3'));
-        setTransferMiles(String(editingPackage.transferMiles ?? '25'));
+        setVisitationHours(String(editingPackage.visitationHours !== undefined && editingPackage.visitationHours !== null && editingPackage.visitationHours !== '' ? editingPackage.visitationHours : '3'));
+        setTransferMiles(String(editingPackage.transferMiles !== undefined && editingPackage.transferMiles !== null && editingPackage.transferMiles !== '' ? editingPackage.transferMiles : '25'));
         setDisplayOrder(String(editingPackage.displayOrder !== undefined && editingPackage.displayOrder !== null ? editingPackage.displayOrder : '1'));
       } else {
         // Reset to default new package baseline
@@ -277,8 +277,12 @@ export default function AddServicePackageModal({
         },
         section1Price: totalSection1,
         section2Price: numSection2,
-        visitationHours: Math.max(0, Number(visitationHours) || 3),
-        transferMiles: Math.max(0, Number(transferMiles) || 25),
+        visitationHours: (visitationHours !== '' && visitationHours !== undefined && visitationHours !== null && !isNaN(Number(visitationHours)))
+          ? Math.max(0, Number(visitationHours))
+          : 3,
+        transferMiles: (transferMiles !== '' && transferMiles !== undefined && transferMiles !== null && !isNaN(Number(transferMiles)))
+          ? Math.max(0, Number(transferMiles))
+          : 25,
         homeId: locationId
       };
 
@@ -425,7 +429,7 @@ export default function AddServicePackageModal({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px', gap: '12px', alignItems: 'flex-start' }}>
                 <InputField
-                  label={lang === 'es' ? `Traslado (${transferMiles || 25} millas) ($)` : `Transfer (${transferMiles || 25} miles) ($)`}
+                  label={lang === 'es' ? `Traslado (${transferMiles !== '' && transferMiles !== undefined && transferMiles !== null ? transferMiles : 25} millas) ($)` : `Transfer (${transferMiles !== '' && transferMiles !== undefined && transferMiles !== null ? transferMiles : 25} miles) ($)`}
                   type="text"
                   placeholder="695"
                   value={transfer}
@@ -462,7 +466,7 @@ export default function AddServicePackageModal({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px', gap: '12px', alignItems: 'flex-start' }}>
                 <InputField
-                  label={lang === 'es' ? `Velación (${visitationHours || 3}h) ($)` : `Visitation (${visitationHours || 3}h) ($)`}
+                  label={lang === 'es' ? `Velación (${visitationHours !== '' && visitationHours !== undefined && visitationHours !== null ? visitationHours : 3}h) ($)` : `Visitation (${visitationHours !== '' && visitationHours !== undefined && visitationHours !== null ? visitationHours : 3}h) ($)`}
                   type="text"
                   placeholder="300"
                   value={visitation}

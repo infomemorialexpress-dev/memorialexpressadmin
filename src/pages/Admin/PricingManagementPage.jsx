@@ -299,7 +299,10 @@ export default function PricingManagementPage() {
                     </tr>
                   ) : (
                     visibleCaskets.map((casket) => {
-                      const isPriceSet = casket.price !== null && casket.price !== undefined && Number(casket.price) > 0;
+                      const hasValidPrice = casket.price !== null && casket.price !== undefined && casket.price !== '' && !isNaN(Number(casket.price));
+                      const numericPrice = hasValidPrice ? Number(casket.price) : null;
+                      const isPriceZero = hasValidPrice && numericPrice === 0;
+                      const isPriceSet = hasValidPrice && (numericPrice > 0 || (isPriceZero && casket.isActive !== false));
                       const isItemActive = isPriceSet && casket.isActive !== false;
 
                       return (
@@ -400,13 +403,30 @@ export default function PricingManagementPage() {
                             )}
                           </td>
                           <td>
-                            {isPriceSet ? (
+                            {isPriceZero ? (
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '3px 10px',
+                                  borderRadius: 6,
+                                  fontSize: 12,
+                                  fontWeight: 800,
+                                  letterSpacing: '0.5px',
+                                  background: isItemActive ? '#ecfdf5' : '#f1f5f9',
+                                  color: isItemActive ? '#047857' : '#475569',
+                                  border: isItemActive ? '1px solid #a7f3d0' : '1px solid #cbd5e1',
+                                }}
+                                title={lang === 'es' ? 'Incluido ($0)' : 'Included ($0)'}
+                              >
+                                INCL
+                              </span>
+                            ) : isPriceSet ? (
                               <span className="price-tag-plain" style={{ fontWeight: 600, fontSize: 14.5, color: '#183655' }}>
                                 ${Number(casket.price).toLocaleString()}
                               </span>
                             ) : (
                               <span style={{ fontWeight: 600, fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>
-                                $0.00 ({lang === 'es' ? 'Sin precio' : 'Blank'})
+                                {lang === 'es' ? 'Sin precio' : 'Blank'}
                               </span>
                             )}
                           </td>
@@ -549,7 +569,10 @@ export default function PricingManagementPage() {
                   ) : (
                     visibleAddons.map((addon) => {
                       const hasDestinations = Boolean(addon.hasDestinations && addon.destinations?.length > 0);
-                      const isPriceSet = addon.price !== null && addon.price !== undefined && Number(addon.price) >= 0;
+                      const hasValidPrice = addon.price !== null && addon.price !== undefined && addon.price !== '' && !isNaN(Number(addon.price));
+                      const numericPrice = hasValidPrice ? Number(addon.price) : null;
+                      const isPriceZero = hasValidPrice && numericPrice === 0;
+                      const isPriceSet = hasValidPrice && numericPrice >= 0;
                       const isItemActive = hasDestinations || (isPriceSet && addon.isActive !== false);
 
                       return (
@@ -633,16 +656,33 @@ export default function PricingManagementPage() {
                                   ✈️ {addon.destinations.length} {lang === 'es' ? 'destinos' : 'destinations'}
                                 </span>
                                 <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                                  {addon.destinations.map(d => `${d.name}: $${d.defaultPrice}`).join(' • ')}
+                                  {addon.destinations.map(d => `${d.name}: ${Number(d.defaultPrice) === 0 ? 'INCL' : `$${d.defaultPrice}`}`).join(' • ')}
                                 </div>
                               </div>
+                            ) : isPriceZero ? (
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '3px 10px',
+                                  borderRadius: 6,
+                                  fontSize: 12,
+                                  fontWeight: 800,
+                                  letterSpacing: '0.5px',
+                                  background: isItemActive ? '#ecfdf5' : '#f1f5f9',
+                                  color: isItemActive ? '#047857' : '#475569',
+                                  border: isItemActive ? '1px solid #a7f3d0' : '1px solid #cbd5e1',
+                                }}
+                                title={lang === 'es' ? 'Incluido ($0)' : 'Included ($0)'}
+                              >
+                                INCL
+                              </span>
                             ) : isPriceSet ? (
                               <span className="price-tag-plain" style={{ fontWeight: 600, fontSize: 14.5, color: '#183655' }}>
                                 ${Number(addon.price).toLocaleString()}
                               </span>
                             ) : (
                               <span style={{ fontWeight: 600, fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>
-                                $0.00 ({lang === 'es' ? 'Sin precio' : 'Blank'})
+                                {lang === 'es' ? 'Sin precio' : 'Blank'}
                               </span>
                             )}
                           </td>

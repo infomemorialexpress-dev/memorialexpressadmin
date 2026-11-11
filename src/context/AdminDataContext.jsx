@@ -129,8 +129,8 @@ export function AdminDataProvider({ children }) {
               section1Price: hp.section1Price !== undefined ? hp.section1Price : combined[existingIdx].section1Price,
               section2Price: hp.section2Price !== undefined ? hp.section2Price : combined[existingIdx].section2Price,
               itemizedServices: hp.itemizedServices || combined[existingIdx].itemizedServices,
-              visitationHours: hp.visitationHours !== undefined ? Number(hp.visitationHours) : (combined[existingIdx].visitationHours ?? 3),
-              transferMiles: hp.transferMiles !== undefined ? Number(hp.transferMiles) : (combined[existingIdx].transferMiles ?? 25),
+              visitationHours: (hp.visitationHours !== undefined && hp.visitationHours !== null && hp.visitationHours !== '' && !isNaN(Number(hp.visitationHours))) ? Number(hp.visitationHours) : (combined[existingIdx].visitationHours ?? 3),
+              transferMiles: (hp.transferMiles !== undefined && hp.transferMiles !== null && hp.transferMiles !== '' && !isNaN(Number(hp.transferMiles))) ? Number(hp.transferMiles) : (combined[existingIdx].transferMiles ?? 25),
               displayOrder: hp.displayOrder !== undefined ? Number(hp.displayOrder) : (combined[existingIdx].displayOrder !== undefined ? Number(combined[existingIdx].displayOrder) : 0),
               isCustom: combined[existingIdx].isCustom || false,
             };
@@ -147,8 +147,8 @@ export function AdminDataProvider({ children }) {
               section1Price: hp.section1Price,
               section2Price: hp.section2Price,
               itemizedServices: hp.itemizedServices,
-              visitationHours: hp.visitationHours !== undefined ? Number(hp.visitationHours) : 3,
-              transferMiles: hp.transferMiles !== undefined ? Number(hp.transferMiles) : 25,
+              visitationHours: (hp.visitationHours !== undefined && hp.visitationHours !== null && hp.visitationHours !== '' && !isNaN(Number(hp.visitationHours))) ? Number(hp.visitationHours) : 3,
+              transferMiles: (hp.transferMiles !== undefined && hp.transferMiles !== null && hp.transferMiles !== '' && !isNaN(Number(hp.transferMiles))) ? Number(hp.transferMiles) : 25,
               displayOrder: hp.displayOrder !== undefined ? Number(hp.displayOrder) : 0,
               isCustom: true,
               funeralHomeId: selectedHomeId
@@ -520,8 +520,8 @@ export function AdminDataProvider({ children }) {
     const targetHome = homeId || selectedHomeId;
     const s1 = Math.max(0, Number(section1Price) || 0);
     const s2 = Math.max(0, Number(section2Price) || 0);
-    const vHours = visitationHours !== undefined ? Math.max(0, Number(visitationHours)) : 3;
-    const tMiles = transferMiles !== undefined ? Math.max(0, Number(transferMiles)) : 25;
+    const vHours = (visitationHours !== undefined && visitationHours !== null && visitationHours !== '' && !isNaN(Number(visitationHours))) ? Math.max(0, Number(visitationHours)) : 3;
+    const tMiles = (transferMiles !== undefined && transferMiles !== null && transferMiles !== '' && !isNaN(Number(transferMiles))) ? Math.max(0, Number(transferMiles)) : 25;
     const dOrder = displayOrder !== undefined ? Math.max(0, Number(displayOrder)) : 0;
 
     try {
@@ -606,8 +606,8 @@ export function AdminDataProvider({ children }) {
     const targetHome = homeId || selectedHomeId;
     const s1 = Math.max(0, Number(section1Price) || 0);
     const s2 = Math.max(0, Number(section2Price) || 0);
-    const vHours = visitationHours !== undefined ? Math.max(0, Number(visitationHours)) : 3;
-    const tMiles = transferMiles !== undefined ? Math.max(0, Number(transferMiles)) : 25;
+    const vHours = (visitationHours !== undefined && visitationHours !== null && visitationHours !== '' && !isNaN(Number(visitationHours))) ? Math.max(0, Number(visitationHours)) : 3;
+    const tMiles = (transferMiles !== undefined && transferMiles !== null && transferMiles !== '' && !isNaN(Number(transferMiles))) ? Math.max(0, Number(transferMiles)) : 25;
     const dOrder = displayOrder !== undefined ? Math.max(0, Number(displayOrder)) : undefined;
 
     try {
@@ -763,10 +763,11 @@ export function AdminDataProvider({ children }) {
     destinations = [],
     type = 'Guaranteed'
   }) => {
-    const priceNum = Math.max(0, Number(price) || 0);
+    const hasValidPrice = price !== '' && price !== null && price !== undefined && !isNaN(Number(price));
+    const priceNum = hasValidPrice ? Math.max(0, Number(price)) : 0;
     const targetHome = (assignedFuneralHomeId && assignedFuneralHomeId !== '*') ? assignedFuneralHomeId : (homeId || selectedHomeId);
     const isDestActive = hasDestinations && Array.isArray(destinations) && destinations.length > 0;
-    const isActive = priceNum > 0 || isDestActive;
+    const isActive = (hasValidPrice && priceNum >= 0) || isDestActive;
     const esName = (itemName_es || name_es || '').trim();
 
     try {
@@ -893,9 +894,10 @@ export function AdminDataProvider({ children }) {
             patchPayload.name_es = patchPayload.itemName_es;
           }
           if (updates.price !== undefined) {
-            const p = Number(updates.price) || 0;
+            const hasValidPrice = updates.price !== '' && updates.price !== null && !isNaN(Number(updates.price));
+            const p = hasValidPrice ? Math.max(0, Number(updates.price)) : 0;
             patchPayload.listPrice = p;
-            patchPayload.isActive = p > 0;
+            patchPayload.isActive = hasValidPrice ? p >= 0 : false;
           }
           if (updates.specifications !== undefined || updates.description !== undefined) {
             patchPayload.specifications = updates.specifications || updates.description;
@@ -953,7 +955,7 @@ export function AdminDataProvider({ children }) {
               name_es: updates.itemName_es !== undefined ? updates.itemName_es : (c.name_es || c.itemName_es || ''),
               price: newPrice,
               listPrice: newPrice,
-              isActive: updates.isActive !== undefined ? Boolean(updates.isActive) : (newPrice > 0),
+              isActive: updates.isActive !== undefined ? Boolean(updates.isActive) : (newPrice !== null && newPrice !== undefined && newPrice !== '' && Number(newPrice) >= 0),
               description: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : c.description),
               specifications: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : c.description),
               manufacturer: updates.manufacturer !== undefined ? updates.manufacturer : (c.manufacturer || ''),
@@ -990,7 +992,7 @@ export function AdminDataProvider({ children }) {
               name_es: updates.itemName_es !== undefined ? updates.itemName_es : (a.name_es || a.itemName_es || ''),
               price: newPrice,
               listPrice: newPrice,
-              isActive: updates.isActive !== undefined ? Boolean(updates.isActive) : (newPrice > 0 || (a.hasDestinations && a.destinations?.length > 0)),
+              isActive: updates.isActive !== undefined ? Boolean(updates.isActive) : ((newPrice !== null && newPrice !== undefined && newPrice !== '' && Number(newPrice) >= 0) || (a.hasDestinations && a.destinations?.length > 0)),
               description: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : a.description),
               specifications: updates.specifications !== undefined ? updates.specifications : (updates.description !== undefined ? updates.description : a.description),
               home: updates.assignedFuneralHomeId !== undefined ? updates.assignedFuneralHomeId : a.home,
