@@ -145,7 +145,7 @@ export default function AddServicePackageModal({
           ? editingPackage.section2Price
           : (editingPackage.s2 ?? 0);
         setSection2Price(String(s2));
-        setVisitationHours(String(editingPackage.visitationHours !== undefined && editingPackage.visitationHours !== null && editingPackage.visitationHours !== '' ? editingPackage.visitationHours : '3'));
+        setVisitationHours(String(editingPackage.visitationHours !== undefined && editingPackage.visitationHours !== null && editingPackage.visitationHours !== '' ? editingPackage.visitationHours : '0'));
         setTransferMiles(String(editingPackage.transferMiles !== undefined && editingPackage.transferMiles !== null && editingPackage.transferMiles !== '' ? editingPackage.transferMiles : '25'));
         setDisplayOrder(String(editingPackage.displayOrder !== undefined && editingPackage.displayOrder !== null ? editingPackage.displayOrder : '1'));
       } else {
@@ -466,7 +466,15 @@ export default function AddServicePackageModal({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px', gap: '12px', alignItems: 'flex-start' }}>
                 <InputField
-                  label={lang === 'es' ? `Velación (${visitationHours !== '' && visitationHours !== undefined && visitationHours !== null ? visitationHours : 3}h) ($)` : `Visitation (${visitationHours !== '' && visitationHours !== undefined && visitationHours !== null ? visitationHours : 3}h) ($)`}
+                  label={
+                    (() => {
+                      const vh = Number(visitationHours);
+                      const hasHours = visitationHours !== '' && !isNaN(vh) && vh > 0;
+                      return lang === 'es'
+                        ? (hasHours ? `Velación (${vh}h) ($)` : 'Velación ($)')
+                        : (hasHours ? `Visitation (${vh}h) ($)` : 'Visitation ($)');
+                    })()
+                  }
                   type="text"
                   placeholder="300"
                   value={visitation}

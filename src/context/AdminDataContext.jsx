@@ -129,7 +129,7 @@ export function AdminDataProvider({ children }) {
               section1Price: hp.section1Price !== undefined ? hp.section1Price : combined[existingIdx].section1Price,
               section2Price: hp.section2Price !== undefined ? hp.section2Price : combined[existingIdx].section2Price,
               itemizedServices: hp.itemizedServices || combined[existingIdx].itemizedServices,
-              visitationHours: (hp.visitationHours !== undefined && hp.visitationHours !== null && hp.visitationHours !== '' && !isNaN(Number(hp.visitationHours))) ? Number(hp.visitationHours) : (combined[existingIdx].visitationHours ?? 3),
+              visitationHours: (hp.visitationHours !== undefined && hp.visitationHours !== null && hp.visitationHours !== '' && !isNaN(Number(hp.visitationHours))) ? Number(hp.visitationHours) : (combined[existingIdx].visitationHours ?? 0),
               transferMiles: (hp.transferMiles !== undefined && hp.transferMiles !== null && hp.transferMiles !== '' && !isNaN(Number(hp.transferMiles))) ? Number(hp.transferMiles) : (combined[existingIdx].transferMiles ?? 25),
               displayOrder: hp.displayOrder !== undefined ? Number(hp.displayOrder) : (combined[existingIdx].displayOrder !== undefined ? Number(combined[existingIdx].displayOrder) : 0),
               isCustom: combined[existingIdx].isCustom || false,
@@ -147,7 +147,7 @@ export function AdminDataProvider({ children }) {
               section1Price: hp.section1Price,
               section2Price: hp.section2Price,
               itemizedServices: hp.itemizedServices,
-              visitationHours: (hp.visitationHours !== undefined && hp.visitationHours !== null && hp.visitationHours !== '' && !isNaN(Number(hp.visitationHours))) ? Number(hp.visitationHours) : 3,
+              visitationHours: (hp.visitationHours !== undefined && hp.visitationHours !== null && hp.visitationHours !== '' && !isNaN(Number(hp.visitationHours))) ? Number(hp.visitationHours) : 0,
               transferMiles: (hp.transferMiles !== undefined && hp.transferMiles !== null && hp.transferMiles !== '' && !isNaN(Number(hp.transferMiles))) ? Number(hp.transferMiles) : 25,
               displayOrder: hp.displayOrder !== undefined ? Number(hp.displayOrder) : 0,
               isCustom: true,
@@ -520,7 +520,7 @@ export function AdminDataProvider({ children }) {
     const targetHome = homeId || selectedHomeId;
     const s1 = Math.max(0, Number(section1Price) || 0);
     const s2 = Math.max(0, Number(section2Price) || 0);
-    const vHours = (visitationHours !== undefined && visitationHours !== null && visitationHours !== '' && !isNaN(Number(visitationHours))) ? Math.max(0, Number(visitationHours)) : 3;
+    const vHours = (visitationHours !== undefined && visitationHours !== null && visitationHours !== '' && !isNaN(Number(visitationHours))) ? Math.max(0, Number(visitationHours)) : 0;
     const tMiles = (transferMiles !== undefined && transferMiles !== null && transferMiles !== '' && !isNaN(Number(transferMiles))) ? Math.max(0, Number(transferMiles)) : 25;
     const dOrder = displayOrder !== undefined ? Math.max(0, Number(displayOrder)) : 0;
 
@@ -606,7 +606,7 @@ export function AdminDataProvider({ children }) {
     const targetHome = homeId || selectedHomeId;
     const s1 = Math.max(0, Number(section1Price) || 0);
     const s2 = Math.max(0, Number(section2Price) || 0);
-    const vHours = (visitationHours !== undefined && visitationHours !== null && visitationHours !== '' && !isNaN(Number(visitationHours))) ? Math.max(0, Number(visitationHours)) : 3;
+    const vHours = (visitationHours !== undefined && visitationHours !== null && visitationHours !== '' && !isNaN(Number(visitationHours))) ? Math.max(0, Number(visitationHours)) : 0;
     const tMiles = (transferMiles !== undefined && transferMiles !== null && transferMiles !== '' && !isNaN(Number(transferMiles))) ? Math.max(0, Number(transferMiles)) : 25;
     const dOrder = displayOrder !== undefined ? Math.max(0, Number(displayOrder)) : undefined;
 
