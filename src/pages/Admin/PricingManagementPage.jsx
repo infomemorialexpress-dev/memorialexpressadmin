@@ -302,8 +302,8 @@ export default function PricingManagementPage() {
                       const hasValidPrice = casket.price !== null && casket.price !== undefined && casket.price !== '' && !isNaN(Number(casket.price));
                       const numericPrice = hasValidPrice ? Number(casket.price) : null;
                       const isPriceZero = hasValidPrice && numericPrice === 0;
-                      const isPriceSet = hasValidPrice && (numericPrice > 0 || (isPriceZero && casket.isActive !== false));
-                      const isItemActive = isPriceSet && casket.isActive !== false;
+                      const isPriceSet = hasValidPrice && numericPrice >= 0;
+                      const isItemActive = isPriceSet && (casket.isActive !== false || isPriceZero);
 
                       return (
                         <tr key={casket.id}>
@@ -573,7 +573,7 @@ export default function PricingManagementPage() {
                       const numericPrice = hasValidPrice ? Number(addon.price) : null;
                       const isPriceZero = hasValidPrice && numericPrice === 0;
                       const isPriceSet = hasValidPrice && numericPrice >= 0;
-                      const isItemActive = hasDestinations || (isPriceSet && addon.isActive !== false);
+                      const isItemActive = hasDestinations || (isPriceSet && (addon.isActive !== false || isPriceZero));
 
                       return (
                         <tr key={addon.id}>

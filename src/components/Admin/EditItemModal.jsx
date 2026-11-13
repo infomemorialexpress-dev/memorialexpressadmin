@@ -298,6 +298,7 @@ export default function EditItemModal({
         destinations: (!isCasket && hasDestinations)
           ? destinations.filter(d => (d.name || '').trim())
           : [],
+        isActive: true,
         type: !isCasket ? type : 'Guaranteed'
       };
 

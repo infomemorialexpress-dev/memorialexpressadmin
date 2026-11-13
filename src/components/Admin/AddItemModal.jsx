@@ -264,6 +264,7 @@ export default function AddItemModal({
       destinations: (category === 'addon' && hasDestinations)
         ? destinations.filter(d => (d.name || '').trim())
         : [],
+      isActive: true,
       type: category === 'addon' ? type : 'Guaranteed',
       manufacturer: manufacturer.trim(),
       description: description || [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),

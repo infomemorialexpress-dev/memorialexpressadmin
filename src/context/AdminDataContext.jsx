@@ -226,7 +226,7 @@ export function AdminDataProvider({ children }) {
               name_es: item?.itemName_es || item?.name_es || '',
               price: listPriceNum !== null ? listPriceNum : null,
               listPrice: listPriceNum !== null ? listPriceNum : null,
-              isActive: Boolean(item?.isActive !== false && listPriceNum !== null && listPriceNum > 0),
+              isActive: Boolean(item?.isActive !== false && listPriceNum !== null && listPriceNum >= 0),
               description: item?.specifications || item?.description || '',
               specifications: item?.specifications || item?.description || '',
               manufacturer: item?.manufacturer || '',
@@ -275,7 +275,7 @@ export function AdminDataProvider({ children }) {
                 price: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : (item.price !== null && item.price !== undefined ? Number(item.price) : 0),
                 listPrice: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : (item.price !== null && item.price !== undefined ? Number(item.price) : 0),
                 isActive: Boolean(
-                  item.isActive && ((item.listPrice !== null && Number(item.listPrice) >= 0) || (item.hasDestinations && item.destinations?.length > 0))
+                  item?.isActive !== false && ((item.listPrice !== null && Number(item.listPrice) >= 0) || (item.hasDestinations && item.destinations?.length > 0))
                 ),
                 description: item.specifications || '',
                 specifications: item.specifications || '',
@@ -821,7 +821,7 @@ export function AdminDataProvider({ children }) {
           assignedPackages: Array.isArray(assignedPackages) ? assignedPackages : [],
           isMandatory: Boolean(isMandatory),
           isFixedPrice: Boolean(isFixedPrice),
-          isActive: priceNum > 0,
+          isActive: priceNum >= 0,
           type: type || 'Guaranteed',
           category: type || 'Guaranteed',
           description: description || 'Custom catalog model',
