@@ -24,6 +24,7 @@ export default function FuneralHomeModal({
     image: '',
     customNote: '',
     noteColor: '#008000',
+    isActive: false,
     branches: [],
     locations: [],
     customForms: []
@@ -67,6 +68,7 @@ export default function FuneralHomeModal({
         image: initialData.imageUrl || initialData.image || '',
         customNote: initialData.customNote || initialData.program || '',
         noteColor: initialData.noteColor || '#008000',
+        isActive: Boolean(initialData.isActive),
         branches: Array.isArray(initialData.branches)
           ? initialData.branches.map(b => ({
               branchName: b.branchName || b.name || '',
@@ -98,6 +100,7 @@ export default function FuneralHomeModal({
         image: '',
         customNote: '',
         noteColor: '#008000',
+        isActive: false,
         branches: [],
         locations: [],
         customForms: []
@@ -348,6 +351,7 @@ export default function FuneralHomeModal({
         customNote: formData.customNote?.trim() || '',
         noteColor: formData.noteColor || '#008000',
         program: formData.customNote?.trim() || '',
+        isActive: Boolean(formData.isActive),
         branches: branchesToSave,
         chapels: chapelsToSave,
         customForms: customFormsToSave
@@ -468,6 +472,86 @@ export default function FuneralHomeModal({
           {/* TAB 1: GENERAL INFORMATION */}
           {activeTab === 'general' && (
             <>
+              {/* Publication Status Toggle Banner */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 16px',
+                  backgroundColor: formData.isActive ? '#ecfdf5' : '#fffbeb',
+                  border: `1.5px solid ${formData.isActive ? '#a7f3d0' : '#fde68a'}`,
+                  borderRadius: '10px',
+                  marginBottom: '18px',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '13.5px', color: '#1e293b' }}>
+                    <span>{formData.isActive ? '🟢' : '🟡'}</span>
+                    <span>{lang === 'es' ? 'Estado de Publicación (Funeraria)' : 'Publication Status (Funeral Home)'}</span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                    {formData.isActive
+                      ? (lang === 'es' ? 'Activa — visible para los agentes en el cotizador.' : 'Active — published and visible to agents in the quote funnel.')
+                      : (lang === 'es' ? 'Borrador — oculta para los agentes mientras se trabaja en ella.' : 'Draft — hidden from agents while under construction.')}
+                  </div>
+                </div>
+
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    margin: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: '44px',
+                      height: '24px',
+                      backgroundColor: formData.isActive ? '#10b981' : '#cbd5e1',
+                      borderRadius: '24px',
+                      transition: 'background-color 0.2s ease',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Boolean(formData.isActive)}
+                      onChange={(e) => handleChange('isActive', e.target.checked)}
+                      style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '2.5px',
+                        left: formData.isActive ? '22px' : '3px',
+                        width: '19px',
+                        height: '19px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '50%',
+                        transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                      }}
+                    />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '12.5px',
+                      fontWeight: 800,
+                      color: formData.isActive ? '#047857' : '#b45309',
+                      minWidth: '50px',
+                    }}
+                  >
+                    {formData.isActive
+                      ? (lang === 'es' ? 'Activa' : 'Active')
+                      : (lang === 'es' ? 'Borrador' : 'Draft')}
+                  </span>
+                </label>
+              </div>
+
               {/* 1. Facility Photo Upload */}
               <div className="modal-section-photo">
                 <ImageUpload

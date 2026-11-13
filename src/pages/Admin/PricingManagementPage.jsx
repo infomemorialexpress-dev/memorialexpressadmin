@@ -50,6 +50,7 @@ export default function PricingManagementPage() {
 
   const homes = adminDb?.homes || [];
   const currentHomeId = selectedHomeId || homes[0]?._id || homes[0]?.id || '';
+  const activeHomeName = activeHome?.name || (homes.find(h => (h._id === currentHomeId || h.id === currentHomeId))?.name) || 'Selected Funeral Home';
 
   // Filter caskets for this location (items returned by API for this location, including unpriced and legacy)
   const visibleCaskets = (adminDb.caskets || []).filter((c) => {
@@ -208,6 +209,80 @@ export default function PricingManagementPage() {
         )}
       </div>
 
+      {/* PROMINENT CURRENTLY MANAGING HEADER */}
+      <div
+        className="currently-managing-banner"
+        style={{
+          background: 'linear-gradient(135deg, #183655 0%, #1e4976 100%)',
+          color: '#ffffff',
+          borderRadius: '12px',
+          padding: '16px 22px',
+          marginBottom: '20px',
+          boxShadow: '0 4px 12px rgba(24, 54, 85, 0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderLeft: '6px solid #10b981',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div
+            style={{
+              width: '42px',
+              height: '42px',
+              backgroundColor: 'rgba(255, 255, 255, 0.12)',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '22px',
+              flexShrink: 0,
+            }}
+          >
+            🏛️
+          </div>
+          <div>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: '22px',
+                fontWeight: 800,
+                color: '#ffffff',
+                letterSpacing: '-0.3px',
+                lineHeight: 1.25,
+              }}
+            >
+              {lang === 'es' ? 'Administrando Actualmente: ' : 'Currently Managing: '}
+              <span style={{ color: '#38bdf8' }}>{activeHomeName}</span>
+            </h2>
+            <div style={{ fontSize: '12.5px', color: '#cbd5e1', marginTop: '4px' }}>
+              📍 {activeHome?.streetAddress || activeHome?.address ? `${activeHome?.streetAddress || activeHome?.address}, ` : ''}{activeHome?.city || 'CA'}{activeHome?.zipCode ? ` ${activeHome?.zipCode}` : ''}
+              {activeHome?.phone ? ` • 📞 ${activeHome.phone}` : ''}
+            </div>
+          </div>
+        </div>
+
+        {activeHome && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 700,
+                padding: '4px 10px',
+                borderRadius: '6px',
+                backgroundColor: activeHome.isActive ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)',
+                color: activeHome.isActive ? '#6ee7b7' : '#fcd34d',
+                border: `1px solid ${activeHome.isActive ? '#10b981' : '#f59e0b'}`,
+              }}
+            >
+              {activeHome.isActive ? (lang === 'es' ? '✓ Activa para Agentes' : '✓ Active for Agents') : (lang === 'es' ? '📝 Borrador (Oculta)' : '📝 Draft (Hidden)')}
+            </span>
+          </div>
+        )}
+      </div>
+
       {/* 2. TAB CONTROLS & ACTIONS TOOLBAR */}
       <div className="pricing-toolbar-card">
         <div className="tabs-navigation">
@@ -265,13 +340,39 @@ export default function PricingManagementPage() {
           <div className="pricing-table-container">
             <div className="panel-subheading">
               <div>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: '#f0fdf4',
+                    border: '1.5px solid #86efac',
+                    borderRadius: '8px',
+                    padding: '6px 14px',
+                    marginBottom: '10px',
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>🏛️</span>
+                  <h2
+                    style={{
+                      margin: 0,
+                      fontSize: '15.5px',
+                      fontWeight: 800,
+                      color: '#15803d',
+                    }}
+                  >
+                    {lang === 'es' ? 'Administrando Actualmente: ' : 'Currently Managing: '}
+                    <span style={{ color: '#14532d', textDecoration: 'underline' }}>{activeHomeName}</span>
+                  </h2>
+                </div>
+
                 <h3 className="panel-title">
                   ⚰️ {lang === 'es' ? 'Lista de Precios de Ataúdes' : 'Casket & Merchandise Rates'}
                 </h3>
                 <p className="panel-desc">
                   {lang === 'es'
-                    ? `Precios de ataúdes asignados a ${activeHome?.name || 'esta funeraria'}. Haga clic en el lápiz para editar o actualizar el precio.`
-                    : `Casket models available for ${activeHome?.name || 'this location'}. Click the edit icon to modify specifications or rates.`}
+                    ? `Precios de ataúdes asignados a ${activeHomeName}. Haga clic en el lápiz para editar o actualizar el precio.`
+                    : `Casket models available for ${activeHomeName}. Click the edit icon to modify specifications or rates.`}
                 </p>
               </div>
             </div>
@@ -535,13 +636,39 @@ export default function PricingManagementPage() {
           <div className="pricing-table-container">
             <div className="panel-subheading">
               <div>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: '#f0fdf4',
+                    border: '1.5px solid #86efac',
+                    borderRadius: '8px',
+                    padding: '6px 14px',
+                    marginBottom: '10px',
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>🏛️</span>
+                  <h2
+                    style={{
+                      margin: 0,
+                      fontSize: '15.5px',
+                      fontWeight: 800,
+                      color: '#15803d',
+                    }}
+                  >
+                    {lang === 'es' ? 'Administrando Actualmente: ' : 'Currently Managing: '}
+                    <span style={{ color: '#14532d', textDecoration: 'underline' }}>{activeHomeName}</span>
+                  </h2>
+                </div>
+
                 <h3 className="panel-title">
                   🌸 {lang === 'es' ? 'Servicios Adicionales y Anticipos' : 'Add-on Services & Cash Advances'}
                 </h3>
                 <p className="panel-desc">
                   {lang === 'es'
-                    ? `Costos de flores, libro de condolencias, suelta de palomas y servicios complementarios para ${activeHome?.name || 'esta funeraria'}.`
-                    : `Optional add-on merchandise and third-party cash advances for ${activeHome?.name || 'this location'}.`}
+                    ? `Costos de flores, libro de condolencias, suelta de palomas y servicios complementarios para ${activeHomeName}.`
+                    : `Optional add-on merchandise and third-party cash advances for ${activeHomeName}.`}
                 </p>
               </div>
             </div>

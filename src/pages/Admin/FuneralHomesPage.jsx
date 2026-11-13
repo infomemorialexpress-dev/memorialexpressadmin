@@ -121,6 +121,50 @@ export default function FuneralHomesPage() {
     }
   };
 
+  // State for tracking active/draft toggles
+  const [updatingHomeId, setUpdatingHomeId] = useState(null);
+
+  // Toggle active/draft status via PATCH /funeral-homes/:id
+  const handleToggleActive = async (home) => {
+    const homeId = home._id || home.id;
+    const nextStatus = !Boolean(home.isActive);
+    setUpdatingHomeId(homeId);
+
+    // Optimistic UI update
+    setHomes((prev) =>
+      prev.map((h) => ((h._id === homeId || h.id === homeId) ? { ...h, isActive: nextStatus } : h))
+    );
+
+    try {
+      const response = await api.patch(`/funeral-homes/${homeId}`, { isActive: nextStatus });
+      const updated = response.data;
+      setHomes((prev) =>
+        prev.map((h) => ((h._id === homeId || h.id === homeId) ? { ...h, ...updated, isActive: nextStatus } : h))
+      );
+      refreshHomes?.(homeId);
+      addToast?.(
+        lang === 'es'
+          ? `Funeraria "${home.name}" cambiada a ${nextStatus ? 'Activa' : 'Borrador'}.`
+          : `Funeral home "${home.name}" set to ${nextStatus ? 'Active' : 'Draft'}.`,
+        'success'
+      );
+    } catch (err) {
+      console.error('Error toggling funeral home active status:', err);
+      // Revert optimistic update
+      setHomes((prev) =>
+        prev.map((h) => ((h._id === homeId || h.id === homeId) ? { ...h, isActive: !nextStatus } : h))
+      );
+      addToast?.(
+        lang === 'es'
+          ? 'Error al actualizar el estado de la funeraria.'
+          : 'Failed to update funeral home status.',
+        'error'
+      );
+    } finally {
+      setUpdatingHomeId(null);
+    }
+  };
+
   // Delete funeral home via API: DELETE /funeral-homes/:id
   const handleConfirmDelete = async () => {
     if (!deletingHome) return;
@@ -293,8 +337,25 @@ export default function FuneralHomesPage() {
                   )}
 
                   <div className="card-badge-overlay">
-                    <span className="verified-pill">
-                      ✓ {lang === 'es' ? 'Activa' : 'Active Location'}
+                    <span
+                      className={`verified-pill ${home.isActive ? 'active-pill' : 'draft-pill'}`}
+                      style={{
+                        backgroundColor: home.isActive ? '#ecfdf5' : '#fef3c7',
+                        color: home.isActive ? '#047857' : '#b45309',
+                        border: `1.5px solid ${home.isActive ? '#a7f3d0' : '#fde68a'}`,
+                        fontWeight: 700,
+                        fontSize: '11px',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                      }}
+                    >
+                      {home.isActive
+                        ? (lang === 'es' ? '✓ Activa' : '✓ Active')
+                        : (lang === 'es' ? '📝 Borrador' : '📝 Draft')}
                     </span>
                   </div>
                 </div>
@@ -366,36 +427,100 @@ export default function FuneralHomesPage() {
                   )}
                 </div>
 
-                {/* Card Actions Footer: Edit, Duplicate, and Delete buttons */}
-                <div className="card-actions-footer">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => handleOpenEditModal(home)}
-                    className="btn-edit-home"
+                {/* Card Actions Footer: Active/Draft Toggle & Action buttons */}
+                <div className="card-actions-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  {/* Toggle Switch Component (Active / Draft) */}
+                  <label
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: updatingHomeId === homeId ? 'wait' : 'pointer',
+                      userSelect: 'none',
+                      margin: 0,
+                    }}
+                    title={
+                      home.isActive
+                        ? (lang === 'es' ? 'Haga clic para cambiar a Borrador (ocultar de agentes)' : 'Click to set as Draft (hide from agents)')
+                        : (lang === 'es' ? 'Haga clic para Publicar (visible para agentes)' : 'Click to Publish (visible to agents)')
+                    }
                   >
-                    ✏️ {lang === 'es' ? 'Editar' : 'Edit'}
-                  </Button>
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: '38px',
+                        height: '20px',
+                        backgroundColor: home.isActive ? '#10b981' : '#cbd5e1',
+                        borderRadius: '20px',
+                        transition: 'background-color 0.2s ease',
+                        opacity: updatingHomeId === homeId ? 0.6 : 1,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={Boolean(home.isActive)}
+                        disabled={updatingHomeId === homeId}
+                        onChange={() => handleToggleActive(home)}
+                        style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '2px',
+                          left: home.isActive ? '20px' : '2px',
+                          width: '16px',
+                          height: '16px',
+                          backgroundColor: '#ffffff',
+                          borderRadius: '50%',
+                          transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                        }}
+                      />
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        color: home.isActive ? '#047857' : '#64748b',
+                        minWidth: '42px',
+                      }}
+                    >
+                      {home.isActive
+                        ? (lang === 'es' ? 'Activa' : 'Active')
+                        : (lang === 'es' ? 'Borrador' : 'Draft')}
+                    </span>
+                  </label>
 
-                  <button
-                    type="button"
-                    className="duplicate-icon-btn"
-                    onClick={() => setDuplicatingHome(home)}
-                    title={lang === 'es' ? 'Duplicar funeraria' : 'Duplicate location'}
-                    aria-label="Duplicate location"
-                  >
-                    📋
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleOpenEditModal(home)}
+                      className="btn-edit-home"
+                    >
+                      ✏️ {lang === 'es' ? 'Editar' : 'Edit'}
+                    </Button>
 
-                  <button
-                    type="button"
-                    className="delete-icon-btn"
-                    onClick={() => setDeletingHome(home)}
-                    title={lang === 'es' ? 'Eliminar funeraria' : 'Delete location'}
-                    aria-label="Delete location"
-                  >
-                    🗑️
-                  </button>
+                    <button
+                      type="button"
+                      className="duplicate-icon-btn"
+                      onClick={() => setDuplicatingHome(home)}
+                      title={lang === 'es' ? 'Duplicar funeraria' : 'Duplicate location'}
+                      aria-label="Duplicate location"
+                    >
+                      📋
+                    </button>
+
+                    <button
+                      type="button"
+                      className="delete-icon-btn"
+                      onClick={() => setDeletingHome(home)}
+                      title={lang === 'es' ? 'Eliminar funeraria' : 'Delete location'}
+                      aria-label="Delete location"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               </div>
             );
