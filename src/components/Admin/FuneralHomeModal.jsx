@@ -47,6 +47,8 @@ export default function FuneralHomeModal({
 
   // Custom Release Form upload states
   const [newFormTitle, setNewFormTitle] = useState('');
+  const [newFormExternalLink, setNewFormExternalLink] = useState('');
+  const [newFormNote, setNewFormNote] = useState('');
   const [selectedPdfFile, setSelectedPdfFile] = useState(null);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -87,7 +89,15 @@ export default function FuneralHomeModal({
           kind: c.kind || 'chapel',
           surcharge: Number(c.surcharge) || 0
         })),
-        customForms: Array.isArray(initialData.customForms) ? initialData.customForms : []
+        customForms: Array.isArray(initialData.customForms)
+          ? initialData.customForms.map(f => ({
+              id: f.id || f._id || `form_${Math.random()}`,
+              formTitle: f.formTitle || f.title || '',
+              fileUrl: f.fileUrl || f.url || '',
+              externalLink: f.externalLink || f.link || '',
+              note: f.note || f.description || '',
+            }))
+          : []
       });
     } else {
       setFormData({
@@ -120,6 +130,8 @@ export default function FuneralHomeModal({
     setChapelSurcharge(0);
     setActiveTab('general');
     setNewFormTitle('');
+    setNewFormExternalLink('');
+    setNewFormNote('');
     setSelectedPdfFile(null);
     setUploadError('');
   }, [initialData, isOpen]);
@@ -217,33 +229,42 @@ export default function FuneralHomeModal({
       setUploadError(lang === 'es' ? 'Ingrese un título para el formulario.' : 'Please enter a title for the form.');
       return;
     }
-    if (!selectedPdfFile) {
-      setUploadError(lang === 'es' ? 'Seleccione un archivo PDF para subir.' : 'Please select a PDF file to upload.');
+    if (!selectedPdfFile && !newFormExternalLink.trim()) {
+      setUploadError(
+        lang === 'es'
+          ? 'Seleccione un archivo PDF para subir o ingrese un enlace externo.'
+          : 'Please select a PDF file to upload or enter an external link.'
+      );
       return;
     }
 
     setIsUploadingPdf(true);
     try {
-      const uploadData = new FormData();
-      uploadData.append('file', selectedPdfFile);
+      let fullUrl = '';
+      if (selectedPdfFile) {
+        const uploadData = new FormData();
+        uploadData.append('file', selectedPdfFile);
 
-      const res = await api.post('/funeral-homes/upload', uploadData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+        const res = await api.post('/funeral-homes/upload', uploadData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
 
-      const returnedUrl = res.data?.secure_url || res.data?.fileUrl || res.data?.url;
-      if (!returnedUrl) {
-        throw new Error('Upload completed but no file URL was returned.');
+        const returnedUrl = res.data?.secure_url || res.data?.fileUrl || res.data?.url;
+        if (!returnedUrl) {
+          throw new Error('Upload completed but no file URL was returned.');
+        }
+
+        // If returnedUrl is already an absolute Cloudinary/HTTP URL, use it directly
+        const origin = (api.defaults.baseURL || '').replace(/\/api\/?$/, '');
+        fullUrl = returnedUrl.startsWith('http') ? returnedUrl : `${origin}${returnedUrl}`;
       }
-
-      // If returnedUrl is already an absolute Cloudinary/HTTP URL, use it directly
-      const origin = (api.defaults.baseURL || '').replace(/\/api\/?$/, '');
-      const fullUrl = returnedUrl.startsWith('http') ? returnedUrl : `${origin}${returnedUrl}`;
 
       const newFormItem = {
         id: `form_${Date.now()}`,
         formTitle: newFormTitle.trim(),
-        fileUrl: fullUrl
+        fileUrl: fullUrl,
+        externalLink: newFormExternalLink.trim(),
+        note: newFormNote.trim()
       };
 
       setFormData(prev => ({
@@ -252,6 +273,8 @@ export default function FuneralHomeModal({
       }));
 
       setNewFormTitle('');
+      setNewFormExternalLink('');
+      setNewFormNote('');
       setSelectedPdfFile(null);
       if (pdfFileInputRef.current) {
         pdfFileInputRef.current.value = '';
@@ -300,14 +323,28 @@ export default function FuneralHomeModal({
             const titleToUse = newFormTitle.trim() || selectedPdfFile.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
             updatedForms.push({
               formTitle: titleToUse,
-              fileUrl: fullUrl
+              fileUrl: fullUrl,
+              externalLink: newFormExternalLink.trim(),
+              note: newFormNote.trim()
             });
             setSelectedPdfFile(null);
             setNewFormTitle('');
+            setNewFormExternalLink('');
+            setNewFormNote('');
           }
         } catch (uploadErr) {
           console.warn('Auto-upload PDF during submit warning:', uploadErr);
         }
+      } else if (newFormTitle.trim() && (newFormExternalLink.trim() || newFormNote.trim())) {
+        updatedForms.push({
+          formTitle: newFormTitle.trim(),
+          fileUrl: '',
+          externalLink: newFormExternalLink.trim(),
+          note: newFormNote.trim()
+        });
+        setNewFormTitle('');
+        setNewFormExternalLink('');
+        setNewFormNote('');
       }
 
       // 2. Affiliated chapels list
@@ -321,10 +358,12 @@ export default function FuneralHomeModal({
 
       // 3. Clean custom forms list
       const customFormsToSave = updatedForms
-        .filter(f => f && (f.fileUrl || f.url) && (f.formTitle || f.title || f.name))
+        .filter(f => f && (f.fileUrl || f.url || f.externalLink) && (f.formTitle || f.title || f.name))
         .map(f => ({
           formTitle: String(f.formTitle || f.title || f.name || '').trim(),
-          fileUrl: String(f.fileUrl || f.url || '').trim()
+          fileUrl: String(f.fileUrl || f.url || '').trim(),
+          externalLink: String(f.externalLink || f.link || '').trim(),
+          note: String(f.note || f.description || '').trim()
         }));
 
       const branchesToSave = (formData.branches || [])
@@ -1083,9 +1122,9 @@ export default function FuneralHomeModal({
               className="custom-forms-upload-grid"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                 gap: '12px',
-                alignItems: 'end',
+                alignItems: 'start',
               }}
             >
               <div style={{ minWidth: 0 }}>
@@ -1128,7 +1167,7 @@ export default function FuneralHomeModal({
                     marginBottom: '5px',
                   }}
                 >
-                  {lang === 'es' ? 'Seleccionar Archivo PDF' : 'Select PDF File'} *
+                  {lang === 'es' ? 'Seleccionar Archivo PDF' : 'Select PDF File'}
                 </label>
                 <input
                   type="file"
@@ -1150,12 +1189,79 @@ export default function FuneralHomeModal({
               </div>
 
               <div style={{ minWidth: 0 }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12.5px',
+                    fontWeight: 650,
+                    color: '#334155',
+                    marginBottom: '5px',
+                  }}
+                >
+                  {lang === 'es' ? 'Enlace Externo (Opcional)' : 'External Link (Optional)'}
+                </label>
+                <input
+                  type="url"
+                  placeholder={lang === 'es' ? 'https://ejemplo.com/formulario' : 'https://example.com/form-or-link'}
+                  value={newFormExternalLink}
+                  onChange={(e) => setNewFormExternalLink(e.target.value)}
+                  className="form-input"
+                  style={{
+                    height: '40px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    padding: '0 12px',
+                    fontSize: '13px',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginTop: '12px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12.5px',
+                    fontWeight: 650,
+                    color: '#334155',
+                    marginBottom: '5px',
+                  }}
+                >
+                  {lang === 'es' ? 'Nota / Descripción (Opcional)' : 'Note/Description (Optional)'}
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder={
+                    lang === 'es'
+                      ? 'ej. Instrucciones de llenado, requisitos de notarización...'
+                      : 'e.g. Instructions, notarization requirements, or special notes for agent...'
+                  }
+                  value={newFormNote}
+                  onChange={(e) => setNewFormNote(e.target.value)}
+                  className="form-input"
+                  style={{
+                    width: '100%',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    boxSizing: 'border-box',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+
+              <div style={{ alignSelf: 'flex-end', minWidth: '150px' }}>
                 <Button
                   variant="primary"
                   type="button"
                   onClick={handleUploadForm}
                   loading={isUploadingPdf}
-                  disabled={!selectedPdfFile || !newFormTitle.trim()}
+                  disabled={!newFormTitle.trim() || (!selectedPdfFile && !newFormExternalLink.trim())}
                   style={{
                     height: '40px',
                     width: '100%',
@@ -1175,7 +1281,7 @@ export default function FuneralHomeModal({
             </div>
 
             {selectedPdfFile && (
-              <div style={{ fontSize: '12px', color: '#059669', fontWeight: 600 }}>
+              <div style={{ fontSize: '12px', color: '#059669', fontWeight: 600, marginTop: '8px' }}>
                 ✓ {lang === 'es' ? 'Archivo listo para subir:' : 'Ready to upload:'} {selectedPdfFile.name} ({(selectedPdfFile.size / 1024).toFixed(0)} KB)
               </div>
             )}
@@ -1212,50 +1318,94 @@ export default function FuneralHomeModal({
                       boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                       <span
                         style={{
-                          backgroundColor: '#fee2e2',
-                          color: '#dc2626',
+                          backgroundColor: form.fileUrl ? '#fee2e2' : '#eff6ff',
+                          color: form.fileUrl ? '#dc2626' : '#2563eb',
                           fontWeight: 800,
                           fontSize: '11px',
                           padding: '4px 8px',
                           borderRadius: '6px',
+                          marginTop: '2px',
                         }}
                       >
-                        PDF
+                        {form.fileUrl ? 'PDF' : 'LINK'}
                       </span>
-                      <div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                         <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a' }}>
                           {form.formTitle}
                         </div>
-                        <div style={{ fontSize: '11.5px', color: '#64748b', wordBreak: 'break-all' }}>
-                          {form.fileUrl}
-                        </div>
+                        {form.fileUrl && (
+                          <div style={{ fontSize: '11.5px', color: '#64748b', wordBreak: 'break-all' }}>
+                            📄 {form.fileUrl}
+                          </div>
+                        )}
+                        {form.externalLink && (
+                          <div style={{ fontSize: '11.5px', color: '#2563eb', wordBreak: 'break-all' }}>
+                            <a
+                              href={form.externalLink.startsWith('http') ? form.externalLink : `https://${form.externalLink}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: '#2563eb', textDecoration: 'underline' }}
+                            >
+                              🔗 {form.externalLink}
+                            </a>
+                          </div>
+                        )}
+                        {form.note && (
+                          <div style={{ fontSize: '12px', color: '#475569', fontStyle: 'italic', marginTop: '2px' }}>
+                            📝 {form.note}
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <a
-                        href={form.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          border: '1px solid #cbd5e1',
-                          backgroundColor: '#f8fafc',
-                          color: '#183655',
-                          fontSize: '12px',
-                          fontWeight: 650,
-                          textDecoration: 'none',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        {lang === 'es' ? 'Ver PDF ↗' : 'View PDF ↗'}
-                      </a>
+                      {form.fileUrl && (
+                        <a
+                          href={form.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            backgroundColor: '#f8fafc',
+                            color: '#183655',
+                            fontSize: '12px',
+                            fontWeight: 650,
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          {lang === 'es' ? 'Ver PDF ↗' : 'View PDF ↗'}
+                        </a>
+                      )}
+                      {form.externalLink && (
+                        <a
+                          href={form.externalLink.startsWith('http') ? form.externalLink : `https://${form.externalLink}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid #bfdbfe',
+                            backgroundColor: '#eff6ff',
+                            color: '#1d4ed8',
+                            fontSize: '12px',
+                            fontWeight: 650,
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          {lang === 'es' ? 'Enlace ↗' : 'Link ↗'}
+                        </a>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleRemoveForm(idx)}
