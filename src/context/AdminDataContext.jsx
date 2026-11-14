@@ -226,6 +226,7 @@ export function AdminDataProvider({ children }) {
               name_es: item?.itemName_es || item?.name_es || '',
               price: listPriceNum !== null ? listPriceNum : null,
               listPrice: listPriceNum !== null ? listPriceNum : null,
+              isIncluded: Boolean(item?.isIncluded),
               isActive: Boolean(item?.isActive !== false && listPriceNum !== null && listPriceNum >= 0),
               description: item?.specifications || item?.description || '',
               specifications: item?.specifications || item?.description || '',
@@ -274,6 +275,7 @@ export function AdminDataProvider({ children }) {
                 name_es: item.itemName_es || item.name_es || '',
                 price: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : (item.price !== null && item.price !== undefined ? Number(item.price) : 0),
                 listPrice: item.listPrice !== null && item.listPrice !== undefined ? Number(item.listPrice) : (item.price !== null && item.price !== undefined ? Number(item.price) : 0),
+                isIncluded: Boolean(item.isIncluded),
                 isActive: Boolean(
                   item?.isActive !== false && ((item.listPrice !== null && Number(item.listPrice) >= 0) || (item.hasDestinations && item.destinations?.length > 0))
                 ),
@@ -795,6 +797,7 @@ export function AdminDataProvider({ children }) {
           isFixedPrice: Boolean(isFixedPrice),
           hasDestinations: Boolean(hasDestinations),
           destinations: Array.isArray(destinations) ? destinations : [],
+          isIncluded: Boolean(isIncluded),
           isActive: isActive,
           type: type || (category === 'casket' ? 'Guaranteed' : 'Non-Guaranteed'),
           assignment: 'Specific Location'
@@ -899,6 +902,9 @@ export function AdminDataProvider({ children }) {
             patchPayload.listPrice = p;
             patchPayload.isActive = hasValidPrice ? p >= 0 : false;
           }
+          if (updates.isIncluded !== undefined) {
+            patchPayload.isIncluded = Boolean(updates.isIncluded);
+          }
           if (updates.specifications !== undefined || updates.description !== undefined) {
             patchPayload.specifications = updates.specifications || updates.description;
           }
@@ -972,6 +978,7 @@ export function AdminDataProvider({ children }) {
               assignedPackages: updates.assignedPackages !== undefined ? updates.assignedPackages : c.assignedPackages,
               isMandatory: updates.isMandatory !== undefined ? Boolean(updates.isMandatory) : c.isMandatory,
               isFixedPrice: updates.isFixedPrice !== undefined ? Boolean(updates.isFixedPrice) : c.isFixedPrice,
+              isIncluded: updates.isIncluded !== undefined ? Boolean(updates.isIncluded) : c.isIncluded,
               type: updates.type !== undefined ? updates.type : c.type
             };
           }
@@ -1002,6 +1009,7 @@ export function AdminDataProvider({ children }) {
               isFixedPrice: updates.isFixedPrice !== undefined ? Boolean(updates.isFixedPrice) : a.isFixedPrice,
               hasDestinations: updates.hasDestinations !== undefined ? Boolean(updates.hasDestinations) : a.hasDestinations,
               destinations: updates.destinations !== undefined ? updates.destinations : a.destinations,
+              isIncluded: updates.isIncluded !== undefined ? Boolean(updates.isIncluded) : a.isIncluded,
               type: updates.type !== undefined ? updates.type : a.type
             };
           }

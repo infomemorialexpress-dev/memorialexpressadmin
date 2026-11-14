@@ -230,23 +230,32 @@ export default function AddItemModal({
       return;
     }
 
+    let resolvedPrice = 0;
+    let isIncluded = false;
+
     if (category === 'addon' && hasDestinations) {
       const validDests = destinations.filter(d => (d.name || '').trim());
       if (validDests.length === 0) {
         setError(lang === 'es' ? 'Agregue al menos un destino con su precio.' : 'Please add at least one destination with a default price.');
         return;
       }
+      resolvedPrice = destinations[0]?.defaultPrice || 0;
+      isIncluded = false;
     } else {
-      const parsedPrice = price === '' ? 0 : Number(price);
-      if (isNaN(parsedPrice) || parsedPrice < 0) {
-        setError(lang === 'es' ? 'Ingrese un precio válido.' : 'Please enter a valid price.');
-        return;
+      const priceStr = String(price !== undefined && price !== null ? price : '').trim();
+      if (priceStr.toUpperCase() === 'INCL' || priceStr.toUpperCase() === 'INCLUDED') {
+        resolvedPrice = 0;
+        isIncluded = true;
+      } else {
+        const parsedPrice = priceStr === '' ? 0 : parseFloat(priceStr.replace(/[\$,]/g, ''));
+        if (isNaN(parsedPrice) || parsedPrice < 0) {
+          setError(lang === 'es' ? 'Ingrese un precio válido o "INCL".' : 'Please enter a valid price or "INCL".');
+          return;
+        }
+        resolvedPrice = parsedPrice;
+        isIncluded = false;
       }
     }
-
-    const resolvedPrice = (category === 'addon' && hasDestinations)
-      ? (destinations[0]?.defaultPrice || 0)
-      : (price === '' ? 0 : Number(price));
 
     setIsSubmitting(true);
     const success = await onAddItem({
@@ -254,6 +263,8 @@ export default function AddItemModal({
       itemName_es: itemName_es.trim(),
       name_es: itemName_es.trim(),
       price: resolvedPrice,
+      listPrice: resolvedPrice,
+      isIncluded: isIncluded,
       category,
       homeId: assignedFuneralHomeId || locationId,
       assignedFuneralHomeId: assignedFuneralHomeId || locationId,
@@ -331,14 +342,14 @@ export default function AddItemModal({
             />
             <InputField
               label={hasDestinations ? (lang === 'es' ? 'Tarifa Base / Destino ($)' : 'Base Rate / Destination ($)') : (lang === 'es' ? 'Precio de Lista ($)' : 'List Price ($)')}
-              type="number"
-              placeholder="0.00"
+              type="text"
+              placeholder="0.00 / INCL"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               disabled={hasDestinations}
               hint={hasDestinations
                 ? (lang === 'es' ? 'Determinado por el destino seleccionado abajo' : 'Determined by the destination selected below')
-                : (lang === 'es' ? 'Ingrese 0 para mostrar como INCL (Incluido)' : 'Enter 0 to display as INCL (Included)')}
+                : (lang === 'es' ? 'Escriba un número o "INCL" si está incluido' : 'Enter a number or "INCL" for included')}
               required={!hasDestinations}
             />
           </div>

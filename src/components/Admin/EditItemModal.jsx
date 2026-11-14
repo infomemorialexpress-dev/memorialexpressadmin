@@ -144,7 +144,7 @@ export default function EditItemModal({
     if (item) {
       setName(item.name || '');
       setItemName_es(item.itemName_es || item.name_es || '');
-      setPrice(item.price !== undefined ? item.price : (item.listPrice !== undefined ? item.listPrice : ''));
+      setPrice(item.isIncluded ? 'INCL' : (item.price !== undefined ? item.price : (item.listPrice !== undefined ? item.listPrice : '')));
       setManufacturer(item.manufacturer || '');
       setSpecifications(item.specifications || item.description || '');
       setInteriorFabricColor(item.interiorFabricAndColor || item.interiorFabricColor || item.interior || '');
@@ -266,9 +266,23 @@ export default function EditItemModal({
       }
     }
 
-    const resolvedPrice = (!isCasket && hasDestinations)
-      ? (destinations[0]?.defaultPrice || 0)
-      : (price === '' ? 0 : Number(price));
+    let resolvedPrice = 0;
+    let isIncluded = false;
+
+    if (!isCasket && hasDestinations) {
+      resolvedPrice = destinations[0]?.defaultPrice || 0;
+      isIncluded = false;
+    } else {
+      const priceStr = String(price !== undefined && price !== null ? price : '').trim();
+      if (priceStr.toUpperCase() === 'INCL' || priceStr.toUpperCase() === 'INCLUDED') {
+        resolvedPrice = 0;
+        isIncluded = true;
+      } else {
+        const parsed = parseFloat(priceStr.replace(/[\$,]/g, ''));
+        resolvedPrice = isNaN(parsed) ? 0 : parsed;
+        isIncluded = false;
+      }
+    }
 
     setIsSubmitting(true);
     try {
@@ -278,6 +292,8 @@ export default function EditItemModal({
         itemName_es: itemName_es.trim(),
         name_es: itemName_es.trim(),
         price: resolvedPrice,
+        listPrice: resolvedPrice,
+        isIncluded: isIncluded,
         manufacturer: manufacturer.trim(),
         specifications: specifications.trim() || [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
         description: specifications.trim() || [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
@@ -369,14 +385,14 @@ export default function EditItemModal({
 
             <InputField
               label={(!isCasket && hasDestinations) ? (lang === 'es' ? 'Tarifa Base / Destino ($)' : 'Base Rate / Destination ($)') : (lang === 'es' ? 'Precio de Lista ($)' : 'List Price ($)')}
-              type="number"
-              placeholder="0.00"
+              type="text"
+              placeholder="0.00 / INCL"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               disabled={!isCasket && hasDestinations}
               hint={(!isCasket && hasDestinations)
                 ? (lang === 'es' ? 'Determinado por los destinos abajo' : 'Determined by the destinations below')
-                : (lang === 'es' ? 'Ingrese 0 para mostrar como INCL (Incluido)' : 'Enter 0 to display as INCL (Included)')}
+                : (lang === 'es' ? 'Escriba un número o "INCL" si está incluido' : 'Enter a number or "INCL" for included')}
               required={isCasket || !hasDestinations}
             />
           </div>

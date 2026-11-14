@@ -404,7 +404,8 @@ export default function PricingManagementPage() {
                       const numericPrice = hasValidPrice ? Number(casket.price) : null;
                       const isPriceZero = hasValidPrice && numericPrice === 0;
                       const isPriceSet = hasValidPrice && numericPrice >= 0;
-                      const isItemActive = isPriceSet && (casket.isActive !== false || isPriceZero);
+                      const isIncluded = Boolean(casket.isIncluded);
+                      const isItemActive = (isPriceSet || isIncluded) && (casket.isActive !== false || isPriceZero || isIncluded);
 
                       return (
                         <tr key={casket.id}>
@@ -504,7 +505,7 @@ export default function PricingManagementPage() {
                             )}
                           </td>
                           <td>
-                            {isPriceZero ? (
+                            {isIncluded ? (
                               <span
                                 style={{
                                   display: 'inline-block',
@@ -517,7 +518,7 @@ export default function PricingManagementPage() {
                                   color: isItemActive ? '#047857' : '#475569',
                                   border: isItemActive ? '1px solid #a7f3d0' : '1px solid #cbd5e1',
                                 }}
-                                title={lang === 'es' ? 'Incluido ($0)' : 'Included ($0)'}
+                                title={lang === 'es' ? 'Incluido (INCL)' : 'Included (INCL)'}
                               >
                                 INCL
                               </span>
@@ -700,7 +701,8 @@ export default function PricingManagementPage() {
                       const numericPrice = hasValidPrice ? Number(addon.price) : null;
                       const isPriceZero = hasValidPrice && numericPrice === 0;
                       const isPriceSet = hasValidPrice && numericPrice >= 0;
-                      const isItemActive = hasDestinations || (isPriceSet && (addon.isActive !== false || isPriceZero));
+                      const isIncluded = Boolean(addon.isIncluded);
+                      const isItemActive = hasDestinations || ((isPriceSet || isIncluded) && (addon.isActive !== false || isPriceZero || isIncluded));
 
                       return (
                         <tr key={addon.id}>
@@ -786,7 +788,7 @@ export default function PricingManagementPage() {
                                   {addon.destinations.map(d => `${d.name}: ${Number(d.defaultPrice) === 0 ? 'INCL' : `$${d.defaultPrice}`}`).join(' • ')}
                                 </div>
                               </div>
-                            ) : isPriceZero ? (
+                            ) : isIncluded ? (
                               <span
                                 style={{
                                   display: 'inline-block',
@@ -799,7 +801,7 @@ export default function PricingManagementPage() {
                                   color: isItemActive ? '#047857' : '#475569',
                                   border: isItemActive ? '1px solid #a7f3d0' : '1px solid #cbd5e1',
                                 }}
-                                title={lang === 'es' ? 'Incluido ($0)' : 'Included ($0)'}
+                                title={lang === 'es' ? 'Incluido (INCL)' : 'Included (INCL)'}
                               >
                                 INCL
                               </span>

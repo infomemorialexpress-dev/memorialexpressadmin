@@ -139,7 +139,18 @@ export default function FuneralHomesPage() {
       const response = await api.patch(`/funeral-homes/${homeId}`, { isActive: nextStatus });
       const updated = response.data;
       setHomes((prev) =>
-        prev.map((h) => ((h._id === homeId || h.id === homeId) ? { ...h, ...updated, isActive: nextStatus } : h))
+        prev.map((h) => {
+          if (h._id === homeId || h.id === homeId) {
+            return {
+              ...h,
+              ...updated,
+              image: updated?.image || updated?.imageUrl || h.image || h.imageUrl || '',
+              imageUrl: updated?.imageUrl || updated?.image || h.imageUrl || h.image || '',
+              isActive: nextStatus
+            };
+          }
+          return h;
+        })
       );
       refreshHomes?.(homeId);
       addToast?.(
