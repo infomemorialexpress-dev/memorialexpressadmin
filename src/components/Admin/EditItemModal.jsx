@@ -252,24 +252,15 @@ export default function EditItemModal({
       return;
     }
 
+    let resolvedPrice = 0;
+    let isIncluded = false;
+
     if (!isCasket && hasDestinations) {
       const validDests = destinations.filter(d => (d.name || '').trim());
       if (validDests.length === 0) {
         setError(lang === 'es' ? 'Agregue al menos un destino con su precio.' : 'Please add at least one destination with a default price.');
         return;
       }
-    } else {
-      const parsedPrice = price === '' ? 0 : Number(price);
-      if (isNaN(parsedPrice) || parsedPrice < 0) {
-        setError(lang === 'es' ? 'Ingrese un precio válido.' : 'Please enter a valid price.');
-        return;
-      }
-    }
-
-    let resolvedPrice = 0;
-    let isIncluded = false;
-
-    if (!isCasket && hasDestinations) {
       resolvedPrice = destinations[0]?.defaultPrice || 0;
       isIncluded = false;
     } else {
@@ -278,8 +269,12 @@ export default function EditItemModal({
         resolvedPrice = 0;
         isIncluded = true;
       } else {
-        const parsed = parseFloat(priceStr.replace(/[\$,]/g, ''));
-        resolvedPrice = isNaN(parsed) ? 0 : parsed;
+        const parsedPrice = priceStr === '' ? 0 : parseFloat(priceStr.replace(/[\$,]/g, ''));
+        if (isNaN(parsedPrice) || parsedPrice < 0) {
+          setError(lang === 'es' ? 'Ingrese un precio válido o "INCL".' : 'Please enter a valid price or "INCL".');
+          return;
+        }
+        resolvedPrice = parsedPrice;
         isIncluded = false;
       }
     }
