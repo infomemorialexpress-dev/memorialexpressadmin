@@ -159,7 +159,7 @@ export default function EditItemModal({
       setAssignedPackages(Array.isArray(item?.assignedPackages) ? item.assignedPackages : []);
       setIsMandatory(Boolean(item.isMandatory));
       setIsFixedPrice(Boolean(item.isFixedPrice));
-      setType(item.type || 'Guaranteed');
+      setType(item.type || item.category || 'Guaranteed');
       setHasDestinations(Boolean(item.hasDestinations));
       setDestinations(Array.isArray(item.destinations) && item.destinations.length > 0
         ? item.destinations.map(d => ({ name: d.name, defaultPrice: Number(d.defaultPrice) || 0 }))
@@ -310,7 +310,8 @@ export default function EditItemModal({
           ? destinations.filter(d => (d.name || '').trim())
           : [],
         isActive: true,
-        type: !isCasket ? type : 'Guaranteed'
+        type: !isCasket ? type : 'Guaranteed',
+        category: !isCasket ? type : 'Guaranteed'
       };
 
       const success = await onSaveItem(updatedData, itemType);

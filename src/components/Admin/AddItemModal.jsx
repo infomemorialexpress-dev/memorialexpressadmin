@@ -277,6 +277,7 @@ export default function AddItemModal({
         : [],
       isActive: true,
       type: category === 'addon' ? type : 'Guaranteed',
+      category: category === 'addon' ? type : 'Guaranteed',
       manufacturer: manufacturer.trim(),
       description: description || [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
       specifications: [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
