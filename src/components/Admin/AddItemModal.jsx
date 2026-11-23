@@ -258,6 +258,7 @@ export default function AddItemModal({
     }
 
     setIsSubmitting(true);
+    const isCasket = category === 'casket';
     const success = await onAddItem({
       name,
       itemName_es: itemName_es.trim(),
@@ -265,19 +266,21 @@ export default function AddItemModal({
       price: resolvedPrice,
       listPrice: resolvedPrice,
       isIncluded: isIncluded,
-      category,
+      itemType: isCasket ? 'CASKET' : 'ADDON',
+      category: isCasket ? 'casket' : 'addon',
       homeId: assignedFuneralHomeId || locationId,
       assignedFuneralHomeId: assignedFuneralHomeId || locationId,
+      funeralHomeId: assignedFuneralHomeId || locationId,
       assignedPackages: assignedPackages,
-      isMandatory: category === 'addon' ? isMandatory : false,
-      isFixedPrice: category === 'addon' ? isFixedPrice : false,
-      hasDestinations: category === 'addon' ? hasDestinations : false,
-      destinations: (category === 'addon' && hasDestinations)
+      isMandatory: !isCasket ? isMandatory : false,
+      isFixedPrice: !isCasket ? isFixedPrice : false,
+      hasDestinations: !isCasket ? hasDestinations : false,
+      destinations: (!isCasket && hasDestinations)
         ? destinations.filter(d => (d.name || '').trim())
         : [],
       isActive: true,
-      type: category === 'addon' ? type : 'Guaranteed',
-      category: category === 'addon' ? type : 'Guaranteed',
+      type: !isCasket ? type : 'Guaranteed',
+      guaranteedType: !isCasket ? type : 'Guaranteed',
       manufacturer: manufacturer.trim(),
       description: description || [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
       specifications: [constructionType.trim(), exteriorColor.trim(), interiorFabricColor.trim()].filter(Boolean).join('; '),
@@ -287,7 +290,7 @@ export default function AddItemModal({
       constructionAndType: constructionType.trim(),
       constructionType: constructionType.trim(),
       modelNumber: modelNumber.trim(),
-      image: category === 'casket' ? image : ''
+      image: isCasket ? image : ''
     });
     setIsSubmitting(false);
 

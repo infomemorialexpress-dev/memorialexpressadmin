@@ -745,7 +745,8 @@ export function AdminDataProvider({ children }) {
     itemName_es,
     name_es,
     price,
-    category,
+    category = 'casket',
+    itemType,
     category_es,
     homeId,
     description = '',
@@ -763,13 +764,15 @@ export function AdminDataProvider({ children }) {
     isFixedPrice = false,
     hasDestinations = false,
     destinations = [],
+    isIncluded = false,
     type = 'Guaranteed'
   }) => {
+    const isCasket = category === 'casket' || itemType === 'CASKET' || String(category).toLowerCase() === 'casket' || String(itemType).toLowerCase() === 'casket';
     const hasValidPrice = price !== '' && price !== null && price !== undefined && !isNaN(Number(price));
     const priceNum = hasValidPrice ? Math.max(0, Number(price)) : 0;
     const targetHome = (assignedFuneralHomeId && assignedFuneralHomeId !== '*') ? assignedFuneralHomeId : (homeId || selectedHomeId);
     const isDestActive = hasDestinations && Array.isArray(destinations) && destinations.length > 0;
-    const isActive = (hasValidPrice && priceNum >= 0) || isDestActive;
+    const isActive = (hasValidPrice && priceNum >= 0) || isDestActive || Boolean(isIncluded);
     const esName = (itemName_es || name_es || '').trim();
 
     try {
@@ -779,7 +782,7 @@ export function AdminDataProvider({ children }) {
           name: name.trim(),
           itemName_es: esName,
           name_es: esName,
-          itemType: category === 'casket' ? 'CASKET' : 'ADDON',
+          itemType: isCasket ? 'CASKET' : 'ADDON',
           listPrice: priceNum,
           specifications: description,
           manufacturer: manufacturer.trim(),
@@ -799,7 +802,8 @@ export function AdminDataProvider({ children }) {
           destinations: Array.isArray(destinations) ? destinations : [],
           isIncluded: Boolean(isIncluded),
           isActive: isActive,
-          type: type || (category === 'casket' ? 'Guaranteed' : 'Non-Guaranteed'),
+          type: isCasket ? 'Guaranteed' : (type || 'Non-Guaranteed'),
+          category: isCasket ? 'Guaranteed' : (type || 'Non-Guaranteed'),
           assignment: 'Specific Location'
         };
         const res = await api.post('/catalog', payload);
@@ -808,25 +812,30 @@ export function AdminDataProvider({ children }) {
         console.warn('Backend POST /catalog failed, fallback to local:', backendErr.message);
       }
 
-      const id = createdBackendItem?._id || (category === 'casket' ? 'casket_' : 'addon_') + Date.now();
+      const id = createdBackendItem?._id || (isCasket ? 'casket_' : 'addon_') + Date.now();
+      const mongoId = createdBackendItem?._id || id;
 
-      if (category === 'casket') {
+      if (isCasket) {
         const newCasket = {
-          id,
-          _id: id,
+          id: mongoId,
+          _id: mongoId,
           name: name.trim(),
+          itemName: name.trim(),
           itemName_es: esName,
           name_es: esName,
           price: priceNum,
           listPrice: priceNum,
+          isIncluded: Boolean(isIncluded),
           home: targetHome,
           assignedFuneralHomeId: targetHome,
+          funeralHomeId: targetHome,
           assignedPackages: Array.isArray(assignedPackages) ? assignedPackages : [],
           isMandatory: Boolean(isMandatory),
           isFixedPrice: Boolean(isFixedPrice),
-          isActive: priceNum >= 0,
-          type: type || 'Guaranteed',
-          category: type || 'Guaranteed',
+          isActive: (priceNum >= 0 || Boolean(isIncluded)),
+          type: 'Guaranteed',
+          category: 'Guaranteed',
+          itemType: 'CASKET',
           description: description || 'Custom catalog model',
           specifications: description || 'Custom catalog model',
           manufacturer: manufacturer.trim(),
@@ -840,42 +849,46 @@ export function AdminDataProvider({ children }) {
           imageUrl: image || '',
           taxable: true
         };
-        const updated = [...(adminDb.caskets || []), newCasket];
+        const updated = [...(adminDb.caskets || []).filter(c => c.id !== mongoId && c._id !== mongoId), newCasket];
         await updatePrices(targetHome, { caskets: updated });
         setAdminDb(prev => ({ ...prev, caskets: updated }));
         addToast(
-          lang === 'es' ? 'Ataúd guardado exitosamente.' : 'Casket saved successfully.',
+          lang === 'es' ? 'Ataúd creado exitosamente.' : 'Casket created successfully.',
           'success'
         );
         return true;
       } else {
         const newAddon = {
-          id,
-          _id: id,
+          id: mongoId,
+          _id: mongoId,
           name: name.trim(),
+          itemName: name.trim(),
           itemName_es: esName,
           name_es: esName,
           price: priceNum,
           listPrice: priceNum,
           home: targetHome,
           assignedFuneralHomeId: targetHome,
+          funeralHomeId: targetHome,
           assignedPackages: Array.isArray(assignedPackages) ? assignedPackages : [],
           isMandatory: Boolean(isMandatory),
           isFixedPrice: Boolean(isFixedPrice),
           hasDestinations: Boolean(hasDestinations),
           destinations: Array.isArray(destinations) ? destinations : [],
+          isIncluded: Boolean(isIncluded),
           isActive: isActive,
           type: type || 'Non-Guaranteed',
           category: type || 'Non-Guaranteed',
+          itemType: 'ADDON',
           description: description || '',
           specifications: description || '',
           taxable: type === 'Guaranteed'
         };
-        const updated = [...(adminDb.addons || []), newAddon];
+        const updated = [...(adminDb.addons || []).filter(a => a.id !== mongoId && a._id !== mongoId), newAddon];
         await updatePrices(targetHome, { addons: updated });
         setAdminDb(prev => ({ ...prev, addons: updated }));
         addToast(
-          lang === 'es' ? 'Servicio adicional guardado exitosamente.' : 'Add-on saved successfully.',
+          lang === 'es' ? 'Servicio adicional creado exitosamente.' : 'Add-on created successfully.',
           'success'
         );
         return true;
