@@ -25,6 +25,7 @@ export default function FuneralHomeModal({
     customNote: '',
     noteColor: '#008000',
     isActive: false,
+    taxRate: 11,
     branches: [],
     locations: [],
     customForms: []
@@ -71,6 +72,7 @@ export default function FuneralHomeModal({
         customNote: initialData.customNote || initialData.program || '',
         noteColor: initialData.noteColor || '#008000',
         isActive: Boolean(initialData.isActive),
+        taxRate: (initialData.taxRate !== undefined && initialData.taxRate !== null && !isNaN(Number(initialData.taxRate))) ? Number(initialData.taxRate) : 11,
         branches: Array.isArray(initialData.branches)
           ? initialData.branches.map(b => ({
               branchName: b.branchName || b.name || '',
@@ -111,6 +113,7 @@ export default function FuneralHomeModal({
         customNote: '',
         noteColor: '#008000',
         isActive: false,
+        taxRate: 11,
         branches: [],
         locations: [],
         customForms: []
@@ -391,6 +394,9 @@ export default function FuneralHomeModal({
         noteColor: formData.noteColor || '#008000',
         program: formData.customNote?.trim() || '',
         isActive: Boolean(formData.isActive),
+        taxRate: formData.taxRate !== undefined && formData.taxRate !== '' && !isNaN(Number(formData.taxRate))
+          ? Math.max(0, Math.min(100, Number(formData.taxRate)))
+          : 11,
         branches: branchesToSave,
         chapels: chapelsToSave,
         customForms: customFormsToSave
@@ -769,6 +775,21 @@ export default function FuneralHomeModal({
               placeholder="e.g. Los Angeles"
               value={formData.county}
               onChange={(e) => handleChange('county', e.target.value)}
+            />
+          </div>
+
+          {/* Sales Tax Rate Field */}
+          <div style={{ marginTop: '14px', maxWidth: '300px' }}>
+            <InputField
+              label={lang === 'es' ? 'Tasa de Impuesto sobre Ventas (%)' : 'Sales Tax Rate (%)'}
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              placeholder="11"
+              value={formData.taxRate !== undefined && formData.taxRate !== null ? formData.taxRate : 11}
+              onChange={(e) => handleChange('taxRate', e.target.value)}
+              hint={lang === 'es' ? 'Porcentaje de impuesto sobre mercancía garantizada (por defecto 11%).' : 'Sales tax percentage on guaranteed merchandise (default 11%).'}
             />
           </div>
 

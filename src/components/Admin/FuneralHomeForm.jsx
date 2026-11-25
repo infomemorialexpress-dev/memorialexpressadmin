@@ -7,17 +7,21 @@ export default function FuneralHomeForm({ onAddHome, isSubmitting, lang }) {
   const [city, setCity] = useState('');
   const [zip, setZip] = useState('');
   const [county, setCounty] = useState('');
+  const [taxRate, setTaxRate] = useState(11);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const success = await onAddHome({ name, city, zip, county });
+    const parsedTax = Number(taxRate);
+    const validTax = isNaN(parsedTax) ? 11 : Math.max(0, Math.min(100, parsedTax));
+    const success = await onAddHome({ name, city, zip, county, taxRate: validTax });
     if (success) {
       setName('');
       setCity('');
       setZip('');
       setCounty('');
+      setTaxRate(11);
     }
   };
 
@@ -53,6 +57,16 @@ export default function FuneralHomeForm({ onAddHome, isSubmitting, lang }) {
             placeholder="e.g. Los Angeles"
             value={county}
             onChange={(e) => setCounty(e.target.value)}
+          />
+          <InputField
+            label={lang === 'es' ? 'Tasa de Impuesto (%)' : 'Tax Rate (%)'}
+            type="number"
+            step="0.01"
+            min="0"
+            max="100"
+            placeholder="11"
+            value={taxRate}
+            onChange={(e) => setTaxRate(e.target.value)}
           />
         </div>
 
