@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const DEFAULT_API_URL = 'https://memorialexpressbackend.onrender.com/api';
+const DEFAULT_API_URL = 'https://api.memorialexpress.live/api';
 const formatApiUrl = (url) => {
   if (!url) return DEFAULT_API_URL;
   const trimmed = url.trim().replace(/\/+$/, '');
